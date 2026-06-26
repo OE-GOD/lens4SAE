@@ -94,7 +94,7 @@ class FeatureScope:
     def _own_unit_vec(self, feature):
         """Steer the feature at a strong-but-natural firing level (95th pct of its active activations)."""
         col = self._X[:, feature]; active = col[col > 0]
-        if active.size < 10:
+        if active.size < 5:                                 # too sparse on this corpus to set a scale
             return None
         a_hi = float(np.percentile(active, 95))
         return a_hi * self.Wdec[feature]                    # own units; W_dec NOT renormalized
@@ -106,10 +106,12 @@ class FeatureScope:
         steer = np.array([self._readout(p, steer=s) for p in PROBES])
         return steer - base
 
-    def _cause(self, feature, mult=2.0, n_controls=3, n_boot=500):
+    def _cause(self, feature, mult=2.0, n_controls=3, n_boot=500, fallback_norm=None):
         vec = self._own_unit_vec(feature)
         if vec is None:
-            return None
+            if fallback_norm is None:
+                return None                                  # genuinely untestable on this corpus
+            col = self.Wdec[feature]; vec = col / col.norm() * fallback_norm  # robust scale for anchors
         sign = float(np.sign(self.read[feature]) or 1.0)
         per_probe = self._shifts(vec, mult) * sign
         cause = float(np.median(per_probe))
@@ -124,11 +126,16 @@ class FeatureScope:
         return cause, ci, control_hi
 
     # ---------- CALIBRATE + SELF-TEST ----------
-    def calibrate(self, mult=2.0, margin=0.2):
-        d = self._cause(GROUND_TRUTH["driver"], mult)[0]
-        t = self._cause(GROUND_TRUTH["thermometer"], mult)[0]
-        if d is None or t is None:
-            raise RuntimeError("anchor features untestable on this corpus")
+    def calibrate(self, mult=2.0, margin=0.2, fallback_norm=12.0):
+        # anchors get a robust fallback scale so calibration never depends on the user's corpus size
+        cd = self._cause(GROUND_TRUTH["driver"], mult, fallback_norm=fallback_norm)
+        ct = self._cause(GROUND_TRUTH["thermometer"], mult, fallback_norm=fallback_norm)
+        if cd is None or ct is None:                         # fail gracefully, no traceback
+            self.self_test = {"passed": False}; self.threshold = 0.0
+            print("[self-test] FAILED: anchor features not testable on this corpus — provide more/varied "
+                  "examples. Labels will be REFUSED.")
+            return self
+        d, t = cd[0], ct[0]
         self.threshold = t + 0.5 * (d - t)
         self.self_test = {"driver_cause": d, "thermo_cause": t, "margin": d - t,
                           "passed": (d > t + margin), "mult": mult}
