@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "featurescope"
+version = "0.2.0"
+description = "Screen SAE features as drivers (causal) vs thermometers (correlated-but-inert) — a one-sided negative screen for interpretability signals used as rewards/monitors."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "OE-GOD" }]
+keywords = ["mechanistic-interpretability", "sparse-autoencoders", "reward-hacking", "goodhart", "RL"]
+dependencies = ["numpy", "torch"]
+
+[project.optional-dependencies]
+gemma = ["transformer-lens", "sae-lens", "transformers", "datasets"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+featurescope = "featurescope.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/featurescope"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
