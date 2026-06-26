@@ -2,6 +2,8 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
+*Status: research prototype (v0.2) — a mechanistic-interpretability research tool, not a production product. Validated on one model / SAE / concept; see Scope & limits.*
+
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
 
@@ -18,7 +20,11 @@ Reward a **driver** and you train the real behaviour. Reward a **thermometer** a
 > sufficient**: a feature that is a driver under gentle steering can still **decouple under hard
 > optimization** (off-manifold). Validated on **one model (Gemma-2-2b), one SAE (Gemma Scope L12),
 > sentiment**. Cause is a **relative ranking**, magnitude-controlled, with bootstrap CIs — not a
-> calibrated absolute. Treat outputs as *candidates and exclusions*, not guarantees.
+> calibrated absolute. **Sentiment-locked (v0.2):** read-scores are concept-general, but the *cause*
+> step (a hard-coded sentiment readout) and the self-test (known *sentiment* anchors) are
+> sentiment-specific — so `--csv` today means *your own sentiment data*, **not** an arbitrary concept.
+> True arbitrary-concept support (an injectable readout + per-concept ground-truth anchors) is on the
+> roadmap (v0.3). Treat outputs as *candidates and exclusions*, not guarantees.
 
 ## Why trust the labels: it self-tests against ground truth
 
@@ -41,7 +47,7 @@ raises). A tool that validates itself against ground truth before speaking.
 ```bash
 pip install -e ".[gemma]"        # needs transformer-lens, sae-lens, transformers
 featurescope                     # built-in sentiment demo
-featurescope --csv mydata.csv    # your own concept (columns: text,label)
+featurescope --csv mydata.csv    # your own SENTIMENT data (columns: text,label); arbitrary concepts = v0.3
 ```
 
 ```python
