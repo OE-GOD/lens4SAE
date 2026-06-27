@@ -1,8 +1,9 @@
 """featurescope CLI — run the driver/thermometer screen out-of-the-box, or on your own concept.
 
-  featurescope                       # built-in sentiment demo (Gemma-2-2b, Gemma Scope L12)
-  featurescope --top-k 20
-  featurescope --csv mydata.csv      # columns: text,label   (label 1 = concept present, 0 = absent)
+  featurescope                                 # built-in sentiment demo (Gemma-2-2b, Gemma Scope L12)
+  featurescope --concept formality             # built-in formality demo
+  featurescope --concept formality --csv mydata.csv --top-k 20
+  featurescope --csv mydata.csv                # columns: text,label (1 = concept present, 0 = absent)
 """
 import argparse, csv
 
@@ -19,14 +20,19 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Screen SAE features as drivers vs thermometers.")
     ap.add_argument("--layer", type=int, default=12)
     ap.add_argument("--top-k", type=int, default=10)
-    ap.add_argument("--csv", type=str, default=None, help="text,label CSV for your own concept")
+    ap.add_argument("--concept", type=str, default="sentiment", help="built-in concept (sentiment | formality)")
+    ap.add_argument("--csv", type=str, default=None, help="text,label CSV (data for the chosen concept's readout)")
     args = ap.parse_args(argv)
 
     from .core import FeatureScope          # lazy: heavy imports only when actually running
     from . import data
-    pos, neg = _load_csv(args.csv) if args.csv else (data.POS, data.NEG)
+    from .concepts import REGISTRY
+    if args.concept not in REGISTRY:
+        ap.error(f"unknown concept '{args.concept}' (have: {', '.join(REGISTRY)})")
+    spec = REGISTRY[args.concept]
+    pos, neg = _load_csv(args.csv) if args.csv else data.examples_for(args.concept)
 
-    fs = FeatureScope(layer=args.layer).fit(pos, neg).calibrate()
+    fs = FeatureScope(layer=args.layer, concept=spec).fit(pos, neg).calibrate()
     fs.screen(top_k=args.top_k)
     fs.report()
 

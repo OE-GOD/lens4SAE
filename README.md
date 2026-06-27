@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.2) — a mechanistic-interpretability research tool, not a production product. Validated on one model / SAE / concept; see Scope & limits.*
+*Status: research prototype (v0.3) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment & formality); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
@@ -20,17 +20,19 @@ Reward a **driver** and you train the real behaviour. Reward a **thermometer** a
 > sufficient**: a feature that is a driver under gentle steering can still **decouple under hard
 > optimization** (off-manifold). Validated on **one model (Gemma-2-2b), one SAE (Gemma Scope L12),
 > sentiment**. Cause is a **relative ranking**, magnitude-controlled, with bootstrap CIs — not a
-> calibrated absolute. **Sentiment-locked (v0.2):** read-scores are concept-general, but the *cause*
-> step (a hard-coded sentiment readout) and the self-test (known *sentiment* anchors) are
-> sentiment-specific — so `--csv` today means *your own sentiment data*, **not** an arbitrary concept.
-> True arbitrary-concept support (an injectable readout + per-concept ground-truth anchors) is on the
-> roadmap (v0.3). Treat outputs as *candidates and exclusions*, not guarantees.
+> calibrated absolute. **Concept-general (v0.3):** any concept works via an injectable readout; the
+> self-test uses **synthetic anchors** (the concept's difference-of-means direction as a guaranteed
+> driver vs a random null), so no per-concept ground-truth features are needed. Concepts that are
+> **not linear directions** (e.g. relational ones like comparison) make the self-test **fail by
+> design** — the tool refuses rather than emitting junk. Demonstrated on sentiment & formality.
+> Treat outputs as *candidates and exclusions*, not guarantees.
 
 ## Why trust the labels: it self-tests against ground truth
 
-Before it will report, FeatureScope runs a **self-test**: it checks that a *known driver* out-causes a
-*known thermometer* on your corpus. If it can't separate them, it **refuses to label** (`report()`
-raises). A tool that validates itself against ground truth before speaking.
+Before it will report, FeatureScope runs a **self-test** with **synthetic anchors**: it manufactures a
+guaranteed driver (the concept's difference-of-means direction) and a guaranteed null (a random
+direction) and checks it can tell them apart. If it can't, it **refuses to label** (`report()`
+raises). A tool that validates itself before speaking — for *any* concept, with no pre-labeled features.
 
 ## How it works
 
@@ -46,13 +48,14 @@ raises). A tool that validates itself against ground truth before speaking.
 
 ```bash
 pip install -e ".[gemma]"        # needs transformer-lens, sae-lens, transformers
-featurescope                     # built-in sentiment demo
-featurescope --csv mydata.csv    # your own SENTIMENT data (columns: text,label); arbitrary concepts = v0.3
+featurescope                       # built-in sentiment demo
+featurescope --concept formality   # built-in formality demo
+featurescope --concept formality --csv mydata.csv   # your own concept's data (columns: text,label)
 ```
 
 ```python
-from featurescope import FeatureScope
-fs = FeatureScope(layer=12).fit(pos_texts, neg_texts).calibrate()
+from featurescope import FeatureScope, FORMALITY
+fs = FeatureScope(layer=12, concept=FORMALITY).fit(formal_texts, casual_texts).calibrate()  # or any ReadoutSpec
 fs.screen(top_k=20)
 print(fs.ruled_out_thermometers())   # the honest output: features to EXCLUDE as rewards
 fs.report()

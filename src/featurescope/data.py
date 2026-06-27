@@ -1,4 +1,4 @@
-"""Built-in sentiment examples so the tool runs out-of-the-box. Bring your own concept via a CSV."""
+"""Built-in example sets so the tool runs out-of-the-box. Bring your own via a CSV (text,label)."""
 
 POS = [
     "An absolute masterpiece.", "I loved every minute.", "Brilliant and moving.",
@@ -16,3 +16,46 @@ NEG = [
     "An exhausting experience.", "Truly dreadful.", "A chore to watch.", "Ugly and boring.",
     "Shoddy work.",
 ]
+
+FORMAL = [
+    "I would be most grateful for your prompt response.",
+    "Please find the requested documents attached herewith.",
+    "We regret to inform you of the schedule change.",
+    "Kindly confirm your attendance at your earliest convenience.",
+    "It is my pleasure to introduce our new initiative.",
+    "Thank you for your continued cooperation in this matter.",
+    "I am writing to formally request a leave of absence.",
+    "We sincerely apologize for any inconvenience caused.",
+    "Should you require further information, do not hesitate to ask.",
+    "The committee has reviewed your application thoroughly.",
+    "I trust this message finds you well.",
+    "We look forward to a productive collaboration.",
+    "Please be advised that the deadline has been extended.",
+    "Your feedback would be greatly appreciated.",
+    "Allow me to express my gratitude for your assistance.",
+    "This serves as a formal notification of the decision.",
+]
+CASUAL = [
+    "hey wanna grab food later lol",
+    "omg you have to see this it's hilarious",
+    "ugh i'm so done with today",
+    "lemme know if you're free this weekend",
+    "that movie was lowkey kinda fire ngl",
+    "k sounds good see ya then",
+    "bruh i totally forgot about that",
+    "we should def hang out soon!!",
+    "idk man it's whatever",
+    "yo can you send me that thing",
+    "haha no worries it's all good",
+    "gonna crash early tonight, super tired",
+    "this is the best snack ever fr",
+    "wait what? that's so random",
+    "thanks a ton you're the best :)",
+    "nah i'm good but thanks tho",
+]
+
+_SETS = {"sentiment": (POS, NEG), "formality": (FORMAL, CASUAL)}
+
+
+def examples_for(concept):
+    return _SETS[concept]
