@@ -42,7 +42,8 @@ raises). A tool that validates itself before speaking — for *any* concept, wit
    behaviour, compared to a **random-direction control at matched magnitude** (so the effect must be
    *specific* to the feature, not generic perturbation). Bootstrap CIs over evaluation prompts.
 3. **Verdict** — decided on a **unit-free robust z** (= SDs of the feature's effect above its *own*
-   random-direction noise floor), so one rule transfers across concepts on different readout scales.
+   random-direction noise floor), *intended* to transfer across concepts on different readout scales
+   (a 2-concept pilot found only **partial** transfer plus a degenerate-null failure mode — see issue #1).
    `RULED_OUT` (z ≤ rule-out gate → thermometer) / `NOT_RULED_OUT` (z ≥ driver gate → driver-like,
    *not* certified) / `INDETERMINATE`. The z gates are **robust, cross-domain defaults pending
    leave-one-concept-out validation** — not claimed optimal (see issue #1).
