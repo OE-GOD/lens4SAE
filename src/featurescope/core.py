@@ -41,6 +41,7 @@ class FeatureResult:
     frac: float              # high-strength effect as a fraction of the synthetic driver (anchor-relative)
     sustained: bool          # effect at max strength >= half its peak (didn't collapse)
     verdict: Verdict
+    example: str = ""        # the input this feature fires hardest on -> what it detects (its label)
     # deliberately NO `safe_to_optimize` field: the tool issues no safety certificate.
 
 
@@ -64,7 +65,7 @@ class FeatureScope:
         self.hook = self.sae.cfg.metadata["hook_name"]
         self.model = HookedTransformer.from_pretrained("gemma-2-2b", device=self.device, dtype=torch.bfloat16)
         self.Wdec = self.sae.W_dec.detach().float()
-        self.read = None; self._X = None; self._alive = None; self._diffmeans = None; self._base = None
+        self.read = None; self._X = None; self._alive = None; self._diffmeans = None; self._base = None; self._texts = None
         self.drv_ref = None; self.z_drv = 3.0; self.z_out = 1.0; self.self_test = None; self.results = None
         self._rng = np.random.RandomState(0)
         self._few = concept.few_shot
@@ -86,6 +87,7 @@ class FeatureScope:
         for t in pos_texts + neg_texts:
             f, r = self._cache(t); feats.append(f); resids.append(r)
         self._X = np.stack(feats).astype(np.float64)
+        self._texts = list(pos_texts) + list(neg_texts)         # kept so we can label each feature
         R = torch.stack(resids); n_pos = len(pos_texts)
         self._diffmeans = (R[:n_pos].mean(0) - R[n_pos:].mean(0))
         y = np.array([1] * n_pos + [0] * len(neg_texts), dtype=np.float64)
@@ -132,6 +134,12 @@ class FeatureScope:
         base_scale = float(np.percentile(active, 95)) * float(Wf.norm())
         return self._measure(unit, base_scale, float(np.sign(self.read[feature]) or 1.0), n_null)
 
+    def _top_example(self, feature):
+        """The fit text this feature fires hardest on — a human-readable label for what it detects."""
+        if self._texts is None:
+            return ""
+        return self._texts[int(np.argmax(self._X[:, feature]))]
+
     # ---------- CALIBRATE + SELF-TEST ----------
     def calibrate(self, anchor_norm=12.0, n_null=12):
         du = self._diffmeans / self._diffmeans.norm()
@@ -171,7 +179,8 @@ class FeatureScope:
             sustained = peak > 1e-6 and dose[-1] >= 0.5 * peak
             frac = peak / self.drv_ref
             rows.append(FeatureResult(int(f), float(self.read[f]), tuple(round(d, 2) for d in dose),
-                                      z, frac, sustained, self._verdict(z, sustained, ci)))
+                                      z, frac, sustained, self._verdict(z, sustained, ci),
+                                      example=self._top_example(int(f))[:50]))
         self.results = sorted(rows, key=lambda r: -r.z)
         return self.results
 
@@ -184,9 +193,9 @@ class FeatureScope:
             raise RuntimeError("self-test did not pass — refusing to report untrusted labels (run .calibrate())")
         assert self.results is not None, "call .screen() first"
         print(f"\nconcept: {self.concept.name}   (dose-response @ {STRENGTHS}; verdict on high-strength robust z)")
-        print(f"{'feature':>8}{'read':>7}{'dose (1x/2x/4x)':>22}{'z':>7}{'sus':>5}   verdict")
+        print(f"{'feature':>8}{'z':>7}{'sus':>5}   {'verdict':<14} fires hardest on")
         for r in self.results:
-            print(f"{r.feature:>8}{r.read:>7.2f}{str(list(r.dose)):>22}{r.z:>7.1f}{'Y' if r.sustained else 'n':>5}   {r.verdict.value}")
+            print(f"{r.feature:>8}{r.z:>7.1f}{'Y' if r.sustained else 'n':>5}   {r.verdict.value:<14} {r.example!r}")
         print(f"\nRULED OUT (do NOT use as rewards): {self.ruled_out_thermometers()}")
         print("Honest scope: ONE-SIDED NEGATIVE screen. Driver = SUSTAINED, significant dose-response (z vs a "
               "high-strength noise floor); saturating/collapsing features are INDETERMINATE, not drivers. "
