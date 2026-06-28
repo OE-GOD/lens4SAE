@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.4) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment & formality); see Scope & limits.*
+*Status: research prototype (v0.5) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment & formality); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
@@ -41,12 +41,14 @@ raises). A tool that validates itself before speaking — for *any* concept, wit
    features aren't unfairly favoured — the *magnitude confound*), and measure the shift in the model's
    behaviour, compared to a **random-direction control at matched magnitude** (so the effect must be
    *specific* to the feature, not generic perturbation). Bootstrap CIs over evaluation prompts.
-3. **Verdict** — decided on a **unit-free robust z** (= SDs of the feature's effect above its *own*
-   random-direction noise floor), *intended* to transfer across concepts on different readout scales
-   (a 2-concept pilot found only **partial** transfer plus a degenerate-null failure mode — see issue #1).
-   `RULED_OUT` (z ≤ rule-out gate → thermometer) / `NOT_RULED_OUT` (z ≥ driver gate → driver-like,
-   *not* certified) / `INDETERMINATE`. The z gates are **robust, cross-domain defaults pending
-   leave-one-concept-out validation** — not claimed optimal (see issue #1).
+3. **Verdict (v0.5 — dose-response)** — steer each feature at **1×/2×/4×** its own units and decide on a
+   **unit-free robust z at the high strength** (SDs above the high-strength random-noise floor). A driver
+   must be **sustained**: a feature whose effect **saturates or reverses** at high strength is *not* a
+   safe driver → `INDETERMINATE`. `RULED_OUT` (high-strength effect within noise → thermometer) /
+   `NOT_RULED_OUT` (sustained + significant → driver-like, *not* certified) / `INDETERMINATE`. Measuring
+   the null at *high* strength fixes v0.4's degenerate-null bug and controls off-manifold inflation. z
+   gates are cross-domain **defaults pending leave-one-concept-out validation** (issue #1); the true gold
+   (gaming under optimization) needs GPU.
 
 ## Install & run
 

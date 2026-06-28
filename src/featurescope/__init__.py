@@ -7,4 +7,4 @@ from .core import FeatureScope, Verdict, FeatureResult
 from .concepts import ReadoutSpec, SENTIMENT, FORMALITY, REGISTRY
 
 __all__ = ["FeatureScope", "Verdict", "FeatureResult", "ReadoutSpec", "SENTIMENT", "FORMALITY", "REGISTRY"]
-__version__ = "0.4.0"
+__version__ = "0.5.0"

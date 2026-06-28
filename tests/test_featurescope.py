@@ -11,7 +11,8 @@ def test_verdict_members():
 
 def test_no_safety_certificate():
     # the tool must never expose a "safe_to_optimize" field — it issues no safety certificate
-    r = FeatureResult(feature=1, read=0.4, cause=0.5, cause_ci=(0.3, 0.7), z=5.0, verdict=Verdict.NOT_RULED_OUT)
+    r = FeatureResult(feature=1, read=0.4, dose=(0.1, 0.2, 0.3), z=5.0, frac=0.8,
+                      sustained=True, verdict=Verdict.NOT_RULED_OUT)
     assert not hasattr(r, "safe_to_optimize")
     with pytest.raises(AttributeError):
         r.safe_to_optimize  # noqa
@@ -24,7 +25,7 @@ def test_robust_z_is_unit_free():
 
 
 def test_robust_z_degenerate_null_does_not_explode():
-    # MAD==0 (zero-spread null) must NOT produce a 6e8 z; capped, sign-correct, and 0 for no effect
+    # MAD==0 (zero-spread null) must NOT produce a 6e8 z; capped, sign-correct, 0 for no effect
     null = np.zeros(16)
     assert 0 < _robust_z(0.62, null) <= 50.0
     assert _robust_z(0.0, null) == 0.0
@@ -36,21 +37,20 @@ def _stub():
     return fs
 
 
-def test_verdict_rules_out_thermometer():
+def test_verdict_driver():
     fs = _stub()
-    # z at/below the rule-out gate -> thermometer
-    assert fs._verdict(cause=0.05, ci=(-0.02, 0.1), z=0.5) is Verdict.RULED_OUT
+    assert fs._verdict(z=5.0, sustained=True, ci=(0.2, 0.4)) is Verdict.NOT_RULED_OUT
 
 
-def test_verdict_keeps_driver():
+def test_verdict_thermometer():
     fs = _stub()
-    # z clears the driver gate and CI lower bound is positive -> driver-like
-    assert fs._verdict(cause=0.5, ci=(0.3, 0.7), z=5.0) is Verdict.NOT_RULED_OUT
+    assert fs._verdict(z=0.5, sustained=False, ci=(-0.1, 0.1)) is Verdict.RULED_OUT
 
 
-def test_verdict_indeterminate_between_gates():
+def test_verdict_saturating_is_indeterminate():
     fs = _stub()
-    assert fs._verdict(cause=0.3, ci=(0.1, 0.5), z=2.0) is Verdict.INDETERMINATE
+    # strong z but NOT sustained (saturates/collapses at high strength) -> not a safe driver
+    assert fs._verdict(z=5.0, sustained=False, ci=(0.0, 0.3)) is Verdict.INDETERMINATE
 
 
 def test_report_refuses_without_passing_self_test():
