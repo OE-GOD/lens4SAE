@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.6) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment & formality); see Scope & limits.*
+*Status: research prototype (v0.7) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment & formality); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
@@ -48,7 +48,8 @@ raises). A tool that validates itself before speaking — for *any* concept, wit
    `NOT_RULED_OUT` (sustained + significant → driver-like, *not* certified) / `INDETERMINATE`. Measuring
    the null at *high* strength fixes v0.4's degenerate-null bug and controls off-manifold inflation. z
    gates are cross-domain **defaults pending leave-one-concept-out validation** (issue #1); the true gold
-   (gaming under optimization) needs GPU.
+   (gaming under optimization) needs GPU. **Verdicts are reproducible** — the random directions use a
+   seeded RNG, so the same input gives the same answer every run.
 
 ## Install & run
 

@@ -68,6 +68,7 @@ class FeatureScope:
         self.read = None; self._X = None; self._alive = None; self._diffmeans = None; self._base = None; self._texts = None
         self.drv_ref = None; self.z_drv = 3.0; self.z_out = 1.0; self.self_test = None; self.results = None
         self._rng = np.random.RandomState(0)
+        self._gen = torch.Generator()                 # seeded RNG for random directions -> reproducible verdicts
         self._few = concept.few_shot
         self._pos = self.model.to_tokens(concept.pos_word, prepend_bos=False)[0, 0]
         self._neg = self.model.to_tokens(concept.neg_word, prepend_bos=False)[0, 0]
@@ -112,6 +113,10 @@ class FeatureScope:
         s = vec.to(self.model.cfg.dtype)
         return np.array([self._readout(p, steer=s) for p in self.concept.probes]) - self._base
 
+    def _rand_unit(self, like):
+        r = torch.randn(like.shape, generator=self._gen, dtype=torch.float32).to(like.device, like.dtype)
+        return r / r.norm()                           # a proper random UNIT direction, from the seeded RNG
+
     def _measure(self, unit, base_scale, sign=1.0, n_null=8, n_boot=400):
         """Dose-response over STRENGTHS + a high-strength random-direction null. Returns (dose, z, ci)."""
         self._ensure_base()
@@ -122,7 +127,7 @@ class FeatureScope:
         boot = [np.median(last[self._rng.randint(0, len(last), len(last))]) for _ in range(n_boot)]
         ci = (float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5)))
         hi = base_scale * STRENGTHS[-1]
-        null = np.array([float(np.median(self._dir_shift((torch.randn_like(unit) / torch.randn_like(unit).norm()) * hi)))
+        null = np.array([float(np.median(self._dir_shift(self._rand_unit(unit) * hi)))
                          for _ in range(n_null)])                             # null at HIGH strength (has spread)
         return dose, _robust_z(dose[-1], null), ci
 
@@ -142,10 +147,11 @@ class FeatureScope:
 
     # ---------- CALIBRATE + SELF-TEST ----------
     def calibrate(self, anchor_norm=12.0, n_null=12):
+        self._gen.manual_seed(0)                      # reproducible: same input -> same verdicts
         du = self._diffmeans / self._diffmeans.norm()
         dose_d, zd, _ = self._measure(du, anchor_norm, 1.0, n_null)
         self.drv_ref = max(dose_d) if max(dose_d) > 1e-6 else 1e-6
-        ru = torch.randn_like(self._diffmeans); ru = ru / ru.norm()
+        ru = self._rand_unit(self._diffmeans)
         _, zr, _ = self._measure(ru, anchor_norm, 1.0, n_null)
         self.self_test = {"driver_z": zd, "null_z": zr, "passed": (zd >= self.z_drv and zr < self.z_drv)}
         print(f"[calibrate:{self.concept.name}] synthetic-driver z={zd:.2f}  random-null z={zr:.2f}  "
@@ -168,6 +174,7 @@ class FeatureScope:
 
     def screen(self, top_k=8, n_null=8):
         assert self.read is not None and self.self_test is not None, "call .fit() then .calibrate() first"
+        self._gen.manual_seed(1)                       # reproducible across reruns (distinct stream from calibrate)
         top = self._alive[np.argsort(-np.abs(self.read[self._alive]))[:top_k]]
         rows = []
         for f in top:
