@@ -22,6 +22,7 @@ def main(argv=None):
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--concept", type=str, default="sentiment", help="built-in concept (sentiment | formality)")
     ap.add_argument("--csv", type=str, default=None, help="text,label CSV (data for the chosen concept's readout)")
+    ap.add_argument("--output", type=str, default=None, help="write structured results to a JSON file")
     args = ap.parse_args(argv)
 
     from .core import FeatureScope          # lazy: heavy imports only when actually running
@@ -35,6 +36,11 @@ def main(argv=None):
     fs = FeatureScope(layer=args.layer, concept=spec).fit(pos, neg).calibrate()
     fs.screen(top_k=args.top_k)
     fs.report()
+    if args.output:
+        import json
+        with open(args.output, "w") as fh:
+            json.dump(fs.to_dict(), fh, indent=2)
+        print(f"\nwrote structured results to {args.output}")
 
 
 if __name__ == "__main__":

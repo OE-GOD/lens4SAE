@@ -195,6 +195,21 @@ class FeatureScope:
         assert self.results is not None
         return [r.feature for r in self.results if r.verdict is Verdict.RULED_OUT]
 
+    def to_dict(self):
+        """Structured, JSON-serialisable results — so the verdicts can feed a downstream pipeline."""
+        assert self.results is not None, "call .screen() first"
+        by = lambda v: [r.feature for r in self.results if r.verdict is v]
+        return {
+            "concept": self.concept.name,
+            "self_test": self.self_test,
+            "drivers": by(Verdict.NOT_RULED_OUT),
+            "ruled_out_thermometers": by(Verdict.RULED_OUT),
+            "indeterminate": by(Verdict.INDETERMINATE),
+            "features": [{"feature": r.feature, "read": round(r.read, 3), "dose": list(r.dose),
+                          "z": round(r.z, 2), "frac": round(r.frac, 3), "sustained": r.sustained,
+                          "verdict": r.verdict.value, "fires_on": r.example} for r in self.results],
+        }
+
     def report(self):
         if not (self.self_test and self.self_test["passed"]):
             raise RuntimeError("self-test did not pass — refusing to report untrusted labels (run .calibrate())")

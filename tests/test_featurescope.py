@@ -64,6 +64,22 @@ def test_verdict_saturating_is_indeterminate():
     assert fs._verdict(z=5.0, sustained=False, ci=(0.0, 0.3)) is Verdict.INDETERMINATE
 
 
+def test_to_dict_is_json_serializable():
+    import json
+    from featurescope.concepts import SENTIMENT
+    fs = FeatureScope.__new__(FeatureScope)
+    fs.concept = SENTIMENT
+    fs.self_test = {"passed": True, "driver_z": 5.0, "null_z": 0.0}
+    fs.results = [
+        FeatureResult(8836, -0.78, (0.6, 0.9, 1.4), 10.1, 0.8, True, Verdict.NOT_RULED_OUT, "A disaster."),
+        FeatureResult(10511, 0.87, (0.0, 0.1, 0.2), 0.2, 0.1, False, Verdict.RULED_OUT, "Beautifully made."),
+    ]
+    d = fs.to_dict()
+    assert d["concept"] == "sentiment"
+    assert d["drivers"] == [8836] and d["ruled_out_thermometers"] == [10511]
+    json.dumps(d)   # must be serialisable (no enums/tuples that break)
+
+
 def test_report_refuses_without_passing_self_test():
     fs = _stub()
     fs.self_test = {"passed": False}
