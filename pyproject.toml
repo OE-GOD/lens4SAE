@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "featurescope"
-version = "0.10.0"
+version = "0.11.0"
 description = "Screen SAE features as drivers (causal) vs thermometers (correlated-but-inert) — a one-sided negative screen for interpretability signals used as rewards/monitors."
 readme = "README.md"
 requires-python = ">=3.10"

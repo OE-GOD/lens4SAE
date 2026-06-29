@@ -42,6 +42,7 @@ class FeatureResult:
     sustained: bool          # effect at max strength >= half its peak (didn't collapse)
     verdict: Verdict
     example: str = ""        # the input this feature fires hardest on -> what it detects (its label)
+    necessity: float = float("nan")   # ablation: how much removing it drops the concept (> thresh = necessary)
     # deliberately NO `safe_to_optimize` field: the tool issues no safety certificate.
 
 
@@ -66,7 +67,7 @@ class FeatureScope:
         self.model = HookedTransformer.from_pretrained("gemma-2-2b", device=self.device, dtype=torch.bfloat16)
         self.Wdec = self.sae.W_dec.detach().float()
         self.read = None; self._X = None; self._alive = None; self._diffmeans = None; self._base = None; self._texts = None
-        self.drv_ref = None; self.z_drv = 3.0; self.z_out = 1.0; self.self_test = None; self.results = None
+        self.drv_ref = None; self.z_drv = 3.0; self.z_out = 1.0; self.nec_thresh = 0.3; self.self_test = None; self.results = None
         self._rng = np.random.RandomState(0)
         self._gen = torch.Generator()                 # seeded RNG for random directions -> reproducible verdicts
         self._few = concept.few_shot
@@ -193,7 +194,16 @@ class FeatureScope:
             return Verdict.RULED_OUT
         return Verdict.INDETERMINATE                          # incl. strong-but-collapsing (saturating) features
 
-    def screen(self, top_k=8, n_null=8):
+    def _role(self, r):
+        """The necessity x sufficiency 2x2 role for a result."""
+        suff = r.verdict is Verdict.NOT_RULED_OUT
+        nec = np.isfinite(r.necessity) and r.necessity > self.nec_thresh
+        if suff and nec: return "lever (sufficient+necessary)"
+        if suff:         return "redundant (sufficient only)"
+        if nec:          return "circuit-part (necessary only)"
+        return "bystander"
+
+    def screen(self, top_k=8, n_null=8, with_necessity=True):
         assert self.read is not None and self.self_test is not None, "call .fit() then .calibrate() first"
         self._gen.manual_seed(1)                       # reproducible across reruns (distinct stream from calibrate)
         top = self._alive[np.argsort(-np.abs(self.read[self._alive]))[:top_k]]
@@ -206,9 +216,10 @@ class FeatureScope:
             peak = max(dose)
             sustained = peak > 1e-6 and dose[-1] >= 0.5 * peak
             frac = peak / self.drv_ref
+            nec = self.necessity(int(f)) if with_necessity else float("nan")
             rows.append(FeatureResult(int(f), float(self.read[f]), tuple(round(d, 2) for d in dose),
                                       z, frac, sustained, self._verdict(z, sustained, ci),
-                                      example=self._top_example(int(f))[:50]))
+                                      example=self._top_example(int(f))[:50], necessity=nec))
         self.results = sorted(rows, key=lambda r: -r.z)
         return self.results
 
@@ -228,17 +239,18 @@ class FeatureScope:
             "indeterminate": by(Verdict.INDETERMINATE),
             "features": [{"feature": r.feature, "read": round(r.read, 3), "dose": list(r.dose),
                           "z": round(r.z, 2), "frac": round(r.frac, 3), "sustained": r.sustained,
-                          "verdict": r.verdict.value, "fires_on": r.example} for r in self.results],
+                          "verdict": r.verdict.value, "necessity": round(r.necessity, 3), "role": self._role(r),
+                          "fires_on": r.example} for r in self.results],
         }
 
     def report(self):
         if not (self.self_test and self.self_test["passed"]):
             raise RuntimeError("self-test did not pass — refusing to report untrusted labels (run .calibrate())")
         assert self.results is not None, "call .screen() first"
-        print(f"\nconcept: {self.concept.name}   (dose-response @ {STRENGTHS}; verdict on high-strength robust z)")
-        print(f"{'feature':>8}{'z':>7}{'sus':>5}   {'verdict':<14} fires hardest on")
+        print(f"\nconcept: {self.concept.name}   (dose-response @ {STRENGTHS}; z=sufficiency, nec=necessity)")
+        print(f"{'feature':>8}{'z':>7}{'nec':>7}   {'role (2x2)':<31} fires hardest on")
         for r in self.results:
-            print(f"{r.feature:>8}{r.z:>7.1f}{'Y' if r.sustained else 'n':>5}   {r.verdict.value:<14} {r.example!r}")
+            print(f"{r.feature:>8}{r.z:>7.1f}{r.necessity:>7.2f}   {self._role(r):<31} {r.example!r}")
         print(f"\nRULED OUT (do NOT use as rewards): {self.ruled_out_thermometers()}")
         print("Honest scope: ONE-SIDED NEGATIVE screen. Driver = SUSTAINED, significant dose-response (z vs a "
               "high-strength noise floor); saturating/collapsing features are INDETERMINATE, not drivers. "

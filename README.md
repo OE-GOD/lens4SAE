@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.10) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
+*Status: research prototype (v0.11) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
