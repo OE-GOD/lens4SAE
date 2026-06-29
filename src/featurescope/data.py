@@ -75,7 +75,25 @@ POLITE = [
     "Thanks again, this was really helpful.", "It's a pleasure working with you.",
 ]
 
-_SETS = {"sentiment": (POS, NEG), "formality": (FORMAL, CASUAL), "toxicity": (RUDE, POLITE)}
+CONFIDENT = [
+    "This is definitely true.", "Without a doubt, it will work.", "I am certain this is correct.",
+    "There is no question about it.", "Absolutely, this is the answer.", "It will undoubtedly succeed.",
+    "I'm fully confident in this.", "This is clearly the case.", "Obviously, the result holds.",
+    "I guarantee this is right.", "It is unquestionably so.", "We know this for sure.",
+    "This is established fact.", "Certainly, that's how it works.", "I have no doubt at all.",
+    "This is definitely the best option.",
+]
+HEDGED = [
+    "Maybe this is true.", "It might possibly work.", "I'm not really sure about this.",
+    "Perhaps it could be the case.", "It seems like it might hold.", "I think it could maybe succeed.",
+    "This is possibly correct, I guess.", "It might be the answer, perhaps.", "I'm uncertain whether it works.",
+    "It could potentially be right.", "Maybe, but I can't be sure.", "It's hard to say for certain.",
+    "Possibly, though I doubt it.", "I suppose it might be so.", "There's a chance it's correct.",
+    "It may or may not be true.",
+]
+
+_SETS = {"sentiment": (POS, NEG), "formality": (FORMAL, CASUAL), "toxicity": (RUDE, POLITE),
+         "certainty": (CONFIDENT, HEDGED)}
 
 
 def examples_for(concept):

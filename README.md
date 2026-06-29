@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.11) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
+*Status: research prototype (v0.12) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
@@ -54,6 +54,10 @@ raises). A tool that validates itself before speaking — for *any* concept, wit
 ## Necessity (the other half of cause)
 
 The verdict tests **sufficiency** (does *adding* the feature cause the concept?). `fs.necessity(feature)` adds the complementary **necessity** test (does *removing* it — ablation — break the concept?), giving the necessity×sufficiency **2×2**: THE lever (both) / redundant lever (sufficient, not necessary) / circuit-part (necessary, not sufficient) / bystander. Most drivers come out *sufficient but not necessary* — the model spreads a concept across **redundant** features (the hydra effect). See `necessity_demo.py`.
+
+## Cross-concept transfer (issue #1)
+
+A single z-gate (z>=3) separates each concept's **ground-truth anchors** (manufactured guaranteed-driver vs guaranteed-null) **consistently across all self-test-passing concepts** — sentiment, formality, toxicity (driver z 6.6-7.2, nulls < 0; clean margin). A 4th built-in concept, **certainty**, is **refused** (self-test fails: its synthetic driver scores z=0.77) — the honest-refusal safety net firing on a concept that isn't a usable linear direction here (or whose examples/readout are too weak). Run `transfer_test.py`. A stronger transfer claim still needs labeled *real* features across concepts.
 
 ## Install & run
 

@@ -54,4 +54,16 @@ TOXICITY = ReadoutSpec(
             "The update is ready now."],
 )
 
-REGISTRY = {"sentiment": SENTIMENT, "formality": FORMALITY, "toxicity": TOXICITY}
+CERTAINTY = ReadoutSpec(
+    name="certainty",
+    few_shot=("Text: This is definitely correct, without any doubt.\nTone: confident\n"
+              "Text: Maybe it could possibly be true, I'm not sure.\nTone: uncertain\n"),
+    template="Text: {text}\nTone:",
+    pos_word=" confident", neg_word=" uncertain",
+    probes=["The meeting is on Tuesday.", "Here is the report.", "They sent the file.",
+            "The number is forty-two.", "It happened in the morning.", "The box is on the table.",
+            "She works downtown.", "The code runs daily.", "We met last week.",
+            "The room is upstairs.", "It costs ten dollars.", "The train leaves at noon."],
+)
+
+REGISTRY = {"sentiment": SENTIMENT, "formality": FORMALITY, "toxicity": TOXICITY, "certainty": CERTAINTY}
