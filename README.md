@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.9) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
+*Status: research prototype (v0.10) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
@@ -50,6 +50,10 @@ raises). A tool that validates itself before speaking — for *any* concept, wit
    gates are cross-domain **defaults pending leave-one-concept-out validation** (issue #1); the true gold
    (gaming under optimization) needs GPU. **Verdicts are reproducible** — the random directions use a
    seeded RNG, so the same input gives the same answer every run.
+
+## Necessity (the other half of cause)
+
+The verdict tests **sufficiency** (does *adding* the feature cause the concept?). `fs.necessity(feature)` adds the complementary **necessity** test (does *removing* it — ablation — break the concept?), giving the necessity×sufficiency **2×2**: THE lever (both) / redundant lever (sufficient, not necessary) / circuit-part (necessary, not sufficient) / bystander. Most drivers come out *sufficient but not necessary* — the model spreads a concept across **redundant** features (the hydra effect). See `necessity_demo.py`.
 
 ## Install & run
 

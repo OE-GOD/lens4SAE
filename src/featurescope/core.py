@@ -81,6 +81,27 @@ class FeatureScope:
             feats = self.sae.encode(resid).float()
             return feats.max(0).values.cpu().numpy(), resid.float().mean(0)
 
+    def necessity(self, feature, k=6):
+        """Necessity (ablation): remove the feature's contribution from the stream on texts where it fires
+        hardest, and measure how much the concept readout drops. High = necessary; ~0 = redundant (other
+        features carry it). Complements the steering (sufficiency) test -> the necessity x sufficiency 2x2."""
+        assert self._X is not None and self._texts is not None, "call .fit() first"
+        idx = np.argsort(-self._X[:, feature])[:k]
+        sign = float(np.sign(self.read[feature]) or 1.0); Wf = self.Wdec[feature]
+        def hook(resid, hook):
+            f = self.sae.encode(resid)
+            return resid - f[..., feature:feature + 1] * Wf          # subtract this feature's contribution
+        drops = []
+        for i in idx:
+            toks = self.model.to_tokens(self._few + self.concept.template.format(text=self._texts[int(i)]))
+            with torch.no_grad():
+                base = self.model(toks)
+                abl = self.model.run_with_hooks(toks, fwd_hooks=[(self.hook, hook)])
+            b = (base[0, -1, self._pos] - base[0, -1, self._neg]).item()
+            a = (abl[0, -1, self._pos] - abl[0, -1, self._neg]).item()
+            drops.append((b - a) * sign)                             # >0 = removing it weakened the concept
+        return float(np.median(drops))
+
     def fit(self, pos_texts, neg_texts):
         if not pos_texts or not neg_texts:
             raise ValueError("need both positive and negative examples")
