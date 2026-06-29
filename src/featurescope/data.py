@@ -54,7 +54,28 @@ CASUAL = [
     "nah i'm good but thanks tho",
 ]
 
-_SETS = {"sentiment": (POS, NEG), "formality": (FORMAL, CASUAL)}
+RUDE = [
+    "Shut up, nobody asked for your opinion.", "You're an idiot if you think that will work.",
+    "Get lost, you're completely useless.", "Wow, what a stupid thing to say.",
+    "I don't care about your pathetic excuses.", "You're wasting my time, as usual.",
+    "Nobody likes you, just go away.", "That's the dumbest idea I've ever heard.",
+    "Quit whining and figure it out yourself.", "You're hopeless and always will be.",
+    "Mind your own business, loser.", "Honestly, you're a complete disappointment.",
+    "Stop being so annoying for once.", "You clearly have no idea what you're doing.",
+    "Ugh, why are you even here?", "Do everyone a favor and be quiet.",
+]
+POLITE = [
+    "Thank you so much for your help today.", "I really appreciate you taking the time.",
+    "Would you mind sharing your thoughts?", "That's a great point, thanks for raising it.",
+    "Please let me know if I can assist.", "I'm grateful for your patience with this.",
+    "It was lovely to hear from you.", "Of course, happy to help anytime.",
+    "Thanks for the thoughtful feedback.", "I hope you have a wonderful day.",
+    "That makes a lot of sense, thank you.", "I appreciate your understanding.",
+    "Wonderful work, well done!", "Kindly let me know what you prefer.",
+    "Thanks again, this was really helpful.", "It's a pleasure working with you.",
+]
+
+_SETS = {"sentiment": (POS, NEG), "formality": (FORMAL, CASUAL), "toxicity": (RUDE, POLITE)}
 
 
 def examples_for(concept):

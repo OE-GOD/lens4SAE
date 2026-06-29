@@ -2,7 +2,7 @@
 
 **Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
-*Status: research prototype (v0.8) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment & formality); see Scope & limits.*
+*Status: research prototype (v0.9) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
 *work*. FeatureScope tells the two apart:
@@ -24,7 +24,7 @@ Reward a **driver** and you train the real behaviour. Reward a **thermometer** a
 > self-test uses **synthetic anchors** (the concept's difference-of-means direction as a guaranteed
 > driver vs a random null), so no per-concept ground-truth features are needed. Concepts that are
 > **not linear directions** (e.g. relational ones like comparison) make the self-test **fail by
-> design** — the tool refuses rather than emitting junk. Demonstrated on sentiment & formality.
+> design** — the tool refuses rather than emitting junk. Demonstrated on sentiment, formality & toxicity.
 > Treat outputs as *candidates and exclusions*, not guarantees.
 
 ## Why trust the labels: it self-tests against ground truth

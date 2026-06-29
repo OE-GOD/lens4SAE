@@ -41,4 +41,17 @@ FORMALITY = ReadoutSpec(
             "That is all for now.", "Please see the details.", "It happened last week."],
 )
 
-REGISTRY = {"sentiment": SENTIMENT, "formality": FORMALITY}
+TOXICITY = ReadoutSpec(
+    name="toxicity",
+    few_shot=("Text: Shut up, nobody cares what you think.\nTone: rude\n"
+              "Text: Thank you so much, I really appreciate your help.\nTone: polite\n"),
+    template="Text: {text}\nTone:",
+    pos_word=" rude", neg_word=" polite",
+    probes=["I sent the message yesterday.", "Here is the information you asked for.",
+            "The meeting is at noon.", "This is the document.", "They will arrive soon.",
+            "The report is finished.", "We discussed the plan earlier.", "Let me check on that.",
+            "The file is attached below.", "It happened last week.", "Here are the details.",
+            "The update is ready now."],
+)
+
+REGISTRY = {"sentiment": SENTIMENT, "formality": FORMALITY, "toxicity": TOXICITY}
