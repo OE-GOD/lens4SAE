@@ -58,15 +58,16 @@ def _robust_z(cause, null):
 
 class FeatureScope:
     def __init__(self, layer: int = 12, concept: ReadoutSpec = SENTIMENT, device: str | None = None,
-                 sae_release: str = "gemma-scope-2b-pt-res", sae_id: str | None = None):
+                 sae_release: str = "gemma-scope-2b-pt-res", sae_id: str | None = None,
+                 model=None, sae=None):
         from transformer_lens import HookedTransformer
         from sae_lens import SAE
         self.device = device or ("mps" if torch.backends.mps.is_available() else "cpu")
         self.layer = layer; self.concept = concept
         sae_id = sae_id or f"layer_{layer}/width_16k/average_l0_82"   # default L12 SAE; override for other layers
-        self.sae = SAE.from_pretrained(sae_release, sae_id, device=self.device)
+        self.sae = sae if sae is not None else SAE.from_pretrained(sae_release, sae_id, device=self.device)
         self.hook = self.sae.cfg.metadata["hook_name"]
-        self.model = HookedTransformer.from_pretrained("gemma-2-2b", device=self.device, dtype=torch.bfloat16)
+        self.model = model if model is not None else HookedTransformer.from_pretrained("gemma-2-2b", device=self.device, dtype=torch.bfloat16)
         self.Wdec = self.sae.W_dec.detach().float()
         self.read = None; self._X = None; self._alive = None; self._diffmeans = None; self._base = None; self._texts = None
         self.drv_ref = None; self.z_drv = 3.0; self.z_out = 1.0; self.nec_thresh = 0.3; self.self_test = None; self.results = None
