@@ -76,6 +76,10 @@ print(fs.ruled_out_thermometers())   # the honest output: features to EXCLUDE as
 fs.report()
 ```
 
+## Findings
+
+See **[FINDINGS.md](FINDINGS.md)** — *read-depth ≠ steer-depth*: across 4 concepts, each is readable at layer 0 (lexical) but only steerable at layers 15-18 (causal). Detection is immediate; control is deep.
+
 ## Background
 
 This packages a finding from a series of mech-interp experiments: across ~9,000 sentiment SAE
