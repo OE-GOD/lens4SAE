@@ -57,12 +57,14 @@ def _robust_z(cause, null):
 
 
 class FeatureScope:
-    def __init__(self, layer: int = 12, concept: ReadoutSpec = SENTIMENT, device: str | None = None):
+    def __init__(self, layer: int = 12, concept: ReadoutSpec = SENTIMENT, device: str | None = None,
+                 sae_release: str = "gemma-scope-2b-pt-res", sae_id: str | None = None):
         from transformer_lens import HookedTransformer
         from sae_lens import SAE
         self.device = device or ("mps" if torch.backends.mps.is_available() else "cpu")
         self.layer = layer; self.concept = concept
-        self.sae = SAE.from_pretrained("gemma-scope-2b-pt-res", f"layer_{layer}/width_16k/average_l0_82", device=self.device)
+        sae_id = sae_id or f"layer_{layer}/width_16k/average_l0_82"   # default L12 SAE; override for other layers
+        self.sae = SAE.from_pretrained(sae_release, sae_id, device=self.device)
         self.hook = self.sae.cfg.metadata["hook_name"]
         self.model = HookedTransformer.from_pretrained("gemma-2-2b", device=self.device, dtype=torch.bfloat16)
         self.Wdec = self.sae.W_dec.detach().float()
