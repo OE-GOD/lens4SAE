@@ -49,6 +49,24 @@ Every concept is **perfectly readable at layer 0** (the embeddings) yet only **s
   `read ≠ cause`, shown across depth — and a caution for interpretability: **decodability at a layer
   does not imply control at that layer.**
 
+## Reasoning concepts read *late*
+
+The four concepts above read at layer 0 because they're **lexical** — the signal is in the words. To
+test the converse, I used a **reasoning** concept the surface can't give away: **arithmetic correctness**,
+as minimal pairs (`3 + 4 = 7` vs `3 + 4 = 8`; the answer tokens overlap between the correct and incorrect
+sets, so there is no lexical cue — you must *compute* the sum).
+
+| concept | read-depth |
+|---|---|
+| sentiment (surface) | L0 |
+| arithmetic (reasoning) | **L20** |
+
+Arithmetic hovers near chance (~0.7) through the early/mid layers and only becomes cleanly decodable at
+**layer 20** — once the model has actually done the computation. So **read-depth tracks how much
+computation a concept needs**: lexical concepts are available at layer 0; a concept requiring arithmetic
+isn't available until deep. "Everything reads at L0" was an artifact of testing only *lexical* concepts.
+(`reasoning_read.py`.)
+
 ## A sub-investigation: where does "certainty" live?
 
 Certainty was instructive. At layer 12 it **failed** FeatureScope's self-test (the tool refused to
