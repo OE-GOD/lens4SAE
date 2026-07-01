@@ -4,6 +4,17 @@
 All on Gemma-2-2b + Gemma Scope SAEs; small curated example sets; a 2B model — treat as suggestive,
 not settled. Every claim is reproducible from the scripts named below.*
 
+> **⚠️ Methodological caveat (2026-07-01, re-measurement in progress).** An adversarial design review
+> of the follow-up experiment found two instrument problems that make the numbers below suspect until
+> re-measured: (1) the read-depth estimator scores **in-sample** (the diff-of-means direction is fit on
+> the same items it is evaluated on), which at this n and dimensionality can inflate separability
+> dramatically (verified: AUROC ≈ 1.0 on pure noise at n=40, d=16k) — the fix is leave-one-pair-out CV;
+> (2) steering used a **fixed norm at every layer** while residual norms grow with depth, a confound
+> that mechanically biases steer-depth shallow — the fix is per-layer-scaled doses. The *relative*
+> depth patterns may survive re-measurement; the pre-registered re-run (with the corrected estimator,
+> per-layer dosing, fp32 readout, and permutation nulls) is underway and this note will be replaced by
+> whatever it finds — including a retraction if the pattern does not survive.
+
 ## The question
 
 FeatureScope sorts a model's features into **drivers** (steering them changes behaviour — causal) and
