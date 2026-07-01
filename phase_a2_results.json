@@ -1,0 +1,153 @@
+{
+  "arith_fixed16": {
+    "auroc": 0.65625,
+    "paired_acc": 0.75,
+    "binom_p": 0.0384063720703125
+  },
+  "arith_smallsum40": {
+    "auroc": 0.500625,
+    "paired_acc": 0.5,
+    "binom_p": 0.5626853438097896
+  },
+  "anchor_choice": "fixed16",
+  "comparison_probes": {
+    "kept_pairs": 12,
+    "of": 12,
+    "true": [
+      "34 is greater than 21",
+      "87 is greater than 54",
+      "66 is greater than 63",
+      "72 is greater than 39",
+      "58 is greater than 55",
+      "81 is greater than 44",
+      "45 is less than 78",
+      "27 is less than 49",
+      "90 is less than 94",
+      "16 is less than 68",
+      "29 is less than 77",
+      "80 is less than 85"
+    ],
+    "false": [
+      "21 is greater than 34",
+      "54 is greater than 87",
+      "63 is greater than 66",
+      "39 is greater than 72",
+      "55 is greater than 58",
+      "44 is greater than 81",
+      "78 is less than 45",
+      "49 is less than 27",
+      "94 is less than 90",
+      "68 is less than 16",
+      "77 is less than 29",
+      "85 is less than 80"
+    ]
+  },
+  "capitals_probes": {
+    "kept_pairs": 12,
+    "of": 12,
+    "true": [
+      [
+        "Norway",
+        "Oslo"
+      ],
+      [
+        "Ireland",
+        "Dublin"
+      ],
+      [
+        "Sweden",
+        "Stockholm"
+      ],
+      [
+        "Denmark",
+        "Copenhagen"
+      ],
+      [
+        "Finland",
+        "Helsinki"
+      ],
+      [
+        "Czechia",
+        "Prague"
+      ],
+      [
+        "Kenya",
+        "Nairobi"
+      ],
+      [
+        "Peru",
+        "Lima"
+      ],
+      [
+        "Cuba",
+        "Havana"
+      ],
+      [
+        "Iraq",
+        "Baghdad"
+      ],
+      [
+        "Chile",
+        "Santiago"
+      ],
+      [
+        "Iran",
+        "Tehran"
+      ]
+    ],
+    "false": [
+      [
+        "Norway",
+        "Copenhagen"
+      ],
+      [
+        "Ireland",
+        "Helsinki"
+      ],
+      [
+        "Sweden",
+        "Prague"
+      ],
+      [
+        "Denmark",
+        "Oslo"
+      ],
+      [
+        "Finland",
+        "Dublin"
+      ],
+      [
+        "Czechia",
+        "Stockholm"
+      ],
+      [
+        "Kenya",
+        "Havana"
+      ],
+      [
+        "Peru",
+        "Santiago"
+      ],
+      [
+        "Cuba",
+        "Nairobi"
+      ],
+      [
+        "Iraq",
+        "Tehran"
+      ],
+      [
+        "Chile",
+        "Lima"
+      ],
+      [
+        "Iran",
+        "Baghdad"
+      ]
+    ]
+  },
+  "parity_probes": {
+    "rule": "completion-screen (no mirror pairs exist)",
+    "kept": 24
+  }
+}

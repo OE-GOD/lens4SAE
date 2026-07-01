@@ -1,0 +1,155 @@
+{
+  "dtype": "float32",
+  "device": "mps",
+  "comparison": {
+    "few_shot": "4shot",
+    "stage0": {
+      "auroc": 0.891875,
+      "paired_acc": 1.0,
+      "binom_p": 9.094947017729282e-13
+    },
+    "fit_pair_drops": [],
+    "probe_drops": [
+      "21 is greater than 34",
+      "54 is greater than 87",
+      "63 is greater than 66",
+      "39 is greater than 72",
+      "55 is greater than 58",
+      "44 is greater than 81",
+      "78 is less than 45",
+      "49 is less than 27",
+      "94 is less than 90",
+      "68 is less than 16",
+      "77 is less than 29",
+      "85 is less than 80"
+    ],
+    "gate": true
+  },
+  "capitals": {
+    "stage0": {
+      "auroc": 1.0,
+      "paired_acc": 1.0,
+      "binom_p": 1.52587890625e-05
+    },
+    "fit_pair_drops": [],
+    "kabul_anchor_ok": true,
+    "foil_survivors": [
+      "New Zealand",
+      "Australia"
+    ],
+    "foil_transfer_enabled": false,
+    "probe_countries_dropped": [
+      "Cuba",
+      "Iran",
+      "Iraq",
+      "Peru"
+    ],
+    "final_probes_true": [
+      [
+        "Norway",
+        "Oslo"
+      ],
+      [
+        "Ireland",
+        "Dublin"
+      ],
+      [
+        "Sweden",
+        "Stockholm"
+      ],
+      [
+        "Denmark",
+        "Copenhagen"
+      ],
+      [
+        "Finland",
+        "Helsinki"
+      ],
+      [
+        "Czechia",
+        "Prague"
+      ],
+      [
+        "Kenya",
+        "Nairobi"
+      ],
+      [
+        "Chile",
+        "Santiago"
+      ]
+    ],
+    "final_probes_false": [
+      [
+        "Norway",
+        "Copenhagen"
+      ],
+      [
+        "Denmark",
+        "Oslo"
+      ],
+      [
+        "Ireland",
+        "Helsinki"
+      ],
+      [
+        "Finland",
+        "Dublin"
+      ],
+      [
+        "Sweden",
+        "Prague"
+      ],
+      [
+        "Czechia",
+        "Stockholm"
+      ],
+      [
+        "Chile",
+        "Lima"
+      ],
+      [
+        "Kenya",
+        "Havana"
+      ]
+    ],
+    "gate": true
+  },
+  "parity": {
+    "stage0": {
+      "auroc": 0.80859375,
+      "paired_acc": 0.8125,
+      "binom_p": 0.0106353759765625
+    },
+    "fit_pair_drops": [],
+    "completion_screen_flags": [],
+    "probe_drops": [
+      "13 is an even number",
+      "24 is an odd number",
+      "25 is an even number",
+      "38 is an odd number",
+      "50 is an odd number",
+      "21 is an even number",
+      "44 is an odd number",
+      "68 is an odd number",
+      "86 is an odd number",
+      "57 is an even number",
+      "73 is an even number",
+      "99 is an even number"
+    ],
+    "gate": true
+  },
+  "arith_anchor": {
+    "stage0": {
+      "auroc": 0.543125,
+      "paired_acc": 0.55,
+      "binom_p": 0.3179140013144206
+    }
+  },
+  "sentiment_control": {
+    "stage0": {
+      "auroc": 1.0,
+      "paired_acc": 1.0,
+      "binom_p": 1.52587890625e-05
+    }
+  }
+}
