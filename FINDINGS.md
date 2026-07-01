@@ -90,9 +90,15 @@ done, deep. Surface concepts are readable from the input and controllable near t
 concepts are controllable *while being computed* and readable *once computed*.
 
 *Caveats:* the raw-residual read is weak/noisy (max AUROC 0.82; the clean read-late signal is the
-SAE-feature version at L20). And an **unexplained anomaly**: steering at L20 — the layer where reading is
-*cleanest* — has a *negative* effect (represent ≠ control at the committed layer? or noise?). 16
-examples, 2B. (`arith_steer.py`, `apples_arith.py`.)
+SAE-feature version at L20). 2B, arithmetic only.
+
+**The L20 backfire is real — a `represent ≠ control` signature (`chase_l20.py`).** Re-run with 40
+example-pairs and finer layers: at **L20–21** — exactly where correctness is most *readable* (AUROC
+0.79) — steering the correctness direction has a **dose-dependent negative** effect (CI entirely below
+0; L20 effect [-0.75, -0.50], z ≈ -8; steering harder backfires more), not an isolated spike or a
+straddle-zero fluke. So at the *committed* layers the concept is **represented but not controllable**:
+steering *disrupts* the settled computation (the verdict flips toward "incorrect") instead of steering
+it. (Why the disruption reads specifically as "incorrect" is interpreted, not proven.)
 
 ## A sub-investigation: where does "certainty" live?
 
