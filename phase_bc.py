@@ -16,6 +16,7 @@ import numpy as np, torch
 from transformer_lens import HookedTransformer
 from sae_lens import SAE
 from featurescope import FeatureScope
+from featurescope.core import _robust_z
 import computed_concepts as cc
 
 LAYERS = [0, 4, 8, 12, 16, 20, 24]
@@ -230,26 +231,31 @@ def main():
                 pp = fs._dir_shift(du * (base_scale * m))
                 dose.append(float(np.median(pp))); shifts4 = pp
             fixed = [float(np.median(fs._dir_shift(du * (12.0 * m)))) for m in STRENGTHS]
-            # permutation-null directions: cluster-sign refits of the raw pair-diff mean
+            # permutation-null directions: cluster-sign refits of the raw pair-diff mean.
+            # Adaptive: 16-null screen, escalate to 32 only for candidate layers (fleet cost lever).
             cl = np.asarray(A["cluster"]); cids = np.unique(cl)
             Vr = raw_pair_diff[(name, L)]
-            nulls = []
             rs = np.random.RandomState(100 + L)
-            for _ in range(n_null):
+            def null_effect():
                 sgn = rs.choice([-1, 1], size=len(cids))[np.searchsorted(cids, cl)]
-                nd = (Vr * sgn[:, None]).mean(0)
-                nd = torch.tensor(nd, dtype=torch.float32)
+                nd = torch.tensor((Vr * sgn[:, None]).mean(0), dtype=torch.float32)
                 nd = (nd / nd.norm()).to(fs._diffmeans.device)
-                nulls.append(float(np.median(fs._dir_shift(nd * (base_scale * STRENGTHS[-1])))))
+                return float(np.median(fs._dir_shift(nd * (base_scale * STRENGTHS[-1]))))
+            nulls = [null_effect() for _ in range(n_null)]
+            z = _robust_z(dose[-1], np.array(nulls))
+            if dose[-1] > max(nulls) and z >= 2.5:            # candidate: escalate for a stable z
+                nulls += [null_effect() for _ in range(n_null)]
+                z = _robust_z(dose[-1], np.array(nulls))
             p = (1 + sum(nv >= dose[-1] for nv in nulls)) / (1 + len(nulls))
             peak = max(dose)
             sustained = peak > 1e-6 and dose[-1] >= 0.5 * peak
             boot = [np.mean(shifts4[RNG.randint(0, len(shifts4), len(shifts4))]) for _ in range(400)]
             ci4 = (float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5)))
-            results["steer"][name][L] = {"dose": dose, "fixed12": fixed, "rank_p": p, "sustained": sustained,
-                                         "ci4_mean": ci4, "shifts4": [float(x) for x in shifts4],
+            results["steer"][name][L] = {"dose": dose, "fixed12": fixed, "rank_p": p, "z": float(z),
+                                         "sustained": sustained, "ci4_mean": ci4,
+                                         "shifts4": [float(x) for x in shifts4],
                                          "nulls": nulls, "base_scale": base_scale}
-            print(f"  [steer L{L:>2}] {name:>10}: dose {[round(d,2) for d in dose]}  p {p:.3f}  "
+            print(f"  [steer L{L:>2}] {name:>10}: dose {[round(d,2) for d in dose]}  z {z:5.1f}  p {p:.3f}  "
                   f"sust {sustained}  ci4 [{ci4[0]:.2f},{ci4[1]:.2f}]  (fixed12 {[round(d,2) for d in fixed]})", flush=True)
         del sae
         if dev == "mps":
@@ -262,12 +268,16 @@ def main():
     for name, A in ARMS.items():
         R = results["read"][name]; S = results["steer"][name]
         rd, peak = read_depth_from(R["sae"], layers)
-        pv = {L: S[L]["rank_p"] for L in layers}
-        hp = holm(pv)
-        passing = [L for L in layers if hp[L] and S[L]["sustained"] and S[L]["dose"][-1] > 0]
+        # steer pass (protocol correction 1): beat ALL permutation nulls AND robust z >= 3 AND sustained.
+        # (rank-p+Holm was unsatisfiable at any feasible null count: min p 1/33 > 0.05/7; z>=3 is the
+        #  stricter-than-Holm feasible analog and is recorded alongside the descriptive rank-p.)
+        passing = [L for L in layers
+                   if S[L]["dose"][-1] > max(S[L]["nulls"]) and S[L]["z"] >= 3 and S[L]["sustained"]
+                   and S[L]["dose"][-1] > 0]
         sd = passing[0] if passing else None
         leaky = R["sae"].get(0, 0.5) > 0.65 or R["embed_auroc"] > 0.6
-        defined = rd is not None and R["perm_p"].get(rd, 1) < 0.05 and not leaky
+        peak_layer = max(R["sae"], key=lambda k: R["sae"][k])
+        defined = rd is not None and R["perm_p"].get(peak_layer, 1) < 0.05 and not leaky
         rev = (sd is not None and rd is not None and sd <= rd - 4)
         print(f"{name:>10}: read-depth {('L' + str(rd)) if rd else 'UNDEFINED'} (peak {peak:.2f}, "
               f"embed {R['embed_auroc']:.2f}{', LEAKY' if leaky else ''})  "

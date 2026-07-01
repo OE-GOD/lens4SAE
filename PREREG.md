@@ -41,6 +41,19 @@ parity), measured with the corrected instrument?
 2. Anchor item set: original fixed 16 pairs (random generators fail the behavioral gate: 2–19 operands
    0.54, small-sum 0.50). The anchor's marginal behavioral reality (0.656/0.75) is itself reported.
 
+## Protocol correction 1 (pre-data; found by the smoke test, before any confirmatory measurement)
+
+The frozen steering gate ("empirical rank-p ≤ 0.05 vs ≥ 32 permutation nulls, Holm-corrected over 7
+layers") is mathematically unsatisfiable: the smallest achievable rank-p with K nulls is 1/(K+1)
+(0.0303 at K=32), while Holm's strictest step requires ≤ 0.05/7 ≈ 0.0071 — so no layer could ever
+pass and every concept would be unevaluable *by construction*. Corrected gate, stricter in spirit and
+feasible: a layer passes iff the real 4× effect (a) exceeds **all** permutation nulls (16-null screen,
+escalated to 32 for candidates), (b) has robust z ≥ 3 against the null distribution (parametrically
+~p < 0.0013, tighter than the Holm bound), and (c) shows a sustained dose-response with positive
+effect. Rank-p is still recorded descriptively. The null FAMILY (cluster-sign permutation refits — the
+substantive fix over isotropic directions) is unchanged. Also clarified: the read permutation-p gate is
+evaluated at the peak layer. No confirmatory data existed when this correction was made.
+
 ## Pre-registered predictions
 
 | arm | stage-0 (measured, fp32) | read-depth bin | steer-depth bin | reversal? |
