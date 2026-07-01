@@ -67,6 +67,33 @@ computation a concept needs**: lexical concepts are available at layer 0; a conc
 isn't available until deep. "Everything reads at L0" was an artifact of testing only *lexical* concepts.
 (`reasoning_read.py`.)
 
+## Reasoning reverses the order: steer *mid*, read *late*
+
+Steering arithmetic completes the surprise. Measuring where it's *steerable* per layer (steer the
+raw-residual correctness direction, score vs a same-layer null): it's steerable in the **mid** layers
+(L12–18, peak z ≈ 8.4 at L12) and **not** deep (fails/negative at L20+). So for a reasoning concept the
+order **reverses**: steer-depth (mid) is *shallower* than read-depth (late) — the opposite of surface
+concepts.
+
+To rule out a ruler artifact, I re-measured read **and** steer in the **same** representation
+(raw-residual mean-pooled diff-of-means). Read still peaks deep (L24), steer still peaks mid (L12) — the
+reversal survives.
+
+| concept type | read-depth | steer-depth |
+|---|---|---|
+| surface (sentiment, toxicity, …) | early (L0) | late (L15–18) |
+| reasoning (arithmetic) | late (L20–24) | mid (L12–18) |
+
+**Reading:** the model *computes* arithmetic in mid-layers — and while it's computing, the correctness
+direction is a malleable lever (steerable). The **result** is only readable once the computation is
+done, deep. Surface concepts are readable from the input and controllable near the output; reasoning
+concepts are controllable *while being computed* and readable *once computed*.
+
+*Caveats:* the raw-residual read is weak/noisy (max AUROC 0.82; the clean read-late signal is the
+SAE-feature version at L20). And an **unexplained anomaly**: steering at L20 — the layer where reading is
+*cleanest* — has a *negative* effect (represent ≠ control at the committed layer? or noise?). 16
+examples, 2B. (`arith_steer.py`, `apples_arith.py`.)
+
 ## A sub-investigation: where does "certainty" live?
 
 Certainty was instructive. At layer 12 it **failed** FeatureScope's self-test (the tool refused to
