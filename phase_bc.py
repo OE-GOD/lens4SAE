@@ -312,6 +312,8 @@ def main():
                                          "nulls": nulls, "base_scale": base_scale}
             print(f"  [steer L{L:>2}] {name:>10}: dose {[round(d,2) for d in dose]}  z {z:5.1f}  p {p:.3f}  "
                   f"sust {sustained}  ci4 [{ci4[0]:.2f},{ci4[1]:.2f}]  (fixed12 {[round(d,2) for d in fixed]})", flush=True)
+            with open("phase_bc_results.json", "w") as f:      # per-cell checkpoint: a kill costs one cell, not a layer
+                json.dump(results, f, indent=2, default=float)
         del sae
         if dev == "mps":
             torch.mps.empty_cache()
