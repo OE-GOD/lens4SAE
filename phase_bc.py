@@ -5,8 +5,8 @@ Corrections vs the old pipeline (all from the adversarial design review):
           pairs correctly ordered, with a cluster-sign permutation p; LOPO AUROC secondary; embed-layer
           leakage gate; matched raw-resid cross-check; unigram harness check; label-shuffle control.
   STEER — dose scaled per layer (alpha x median per-token resid norm, alpha anchored at L12 = old
-          norm-12); primary null = cluster-sign permutation directions (label-shuffle refits), rank-p,
-          Holm-corrected across layers; fixed-norm-12 row kept only as a secondary robustness line;
+          norm-12); pass gate = beat all permutation nulls + robust z >= 3 + sustained effect;
+          fixed-norm-12 row kept only as a secondary robustness line;
           steer-depth = shallowest passing layer (first-crossing, same convention as read-depth).
 
 Run `--smoke` first (~10 min): 1 concept, 2 layers, truncated items/probes/nulls, all code paths.
@@ -82,17 +82,6 @@ def read_depth_from(aurocs, layers):
     return next(L for L in layers if aurocs[L] >= thr), peak
 
 
-def holm(pvals):
-    """Holm step-down: returns dict layer->pass at alpha=.05."""
-    items = sorted(pvals.items(), key=lambda kv: kv[1])
-    passed, m = {}, len(items)
-    ok = True
-    for rank, (L, p) in enumerate(items):
-        ok = ok and (p <= 0.05 / (m - rank))
-        passed[L] = ok
-    return passed
-
-
 def normalize_loaded_results(results):
     results["med_norm"] = {int(L): v for L, v in results["med_norm"].items()}
     for name in results["read"]:
@@ -104,6 +93,13 @@ def normalize_loaded_results(results):
     return results
 
 
+def controls_complete(results, arms, layers):
+    controls = results.get("controls", {})
+    mid = layers[len(layers) // 2]
+    expected = ["unigram_L0_auroc"] + [f"shuffled_{name}_L{mid}" for name in arms]
+    return all(k in controls for k in expected)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
@@ -112,6 +108,14 @@ def main():
 
     dev = "mps" if torch.backends.mps.is_available() else "cpu"
     model = HookedTransformer.from_pretrained("gemma-2-2b", device=dev, dtype=torch.float32)
+
+    fails = cc.check_all(model)
+    if fails:
+        print("DATASET ASSERTIONS FAILED — aborting run:")
+        for f in fails:
+            print("  -", f)
+        raise SystemExit(1)
+    print("[assertions] all dataset invariants hold (token multisets, vocab disjointness, no trailing '.')")
 
     a1 = json.load(open("phase_a_results.json")); a2 = json.load(open("phase_a2_results.json"))
     few = cc.CMP_FEWSHOT_4 if a1["comparison"]["few_shot"] == "4shot" else cc.CMP_FEWSHOT_2
@@ -172,11 +176,18 @@ def main():
 
     if args.resume and os.path.exists("phase_bc_results.json"):
         results = normalize_loaded_results(json.load(open("phase_bc_results.json")))
+        for L in sorted(set(med_norm) & set(results["med_norm"])):
+            if abs(med_norm[L] - results["med_norm"][L]) > 1e-6:
+                raise ValueError(
+                    f"Resume med_norm mismatch at L{L}: fresh {med_norm[L]:.12g} vs checkpoint "
+                    f"{results['med_norm'][L]:.12g}. Refusing to resume because this risks dose-scale "
+                    "mixing; resumed runs must not silently merge incompatible normalization scales."
+                )
     else:
         results = {"med_norm": med_norm, "read": {}, "steer": {}, "controls": {}}
-    controls_done = args.resume and "controls" in results
     if "controls" not in results:
         results["controls"] = {}
+    controls_done = args.resume and controls_complete(results, ARMS, layers)
     raw_pair_diff = {}                                        # (arm, layer) -> V_raw for steering nulls
     for name, A in ARMS.items():
         if name not in results["read"]:
@@ -198,38 +209,45 @@ def main():
                   - np.stack([cache_raw[(name, t)][L].mean(0).numpy() for t in A["neg"]])).astype(np.float64)
             raw_pair_diff[(name, L)] = Vr
         read_done = args.resume and all(L in results["read"][name]["sae"] for name in ARMS)
-        if read_done:
-            continue
-        sae = SAE.from_pretrained("gemma-scope-2b-pt-res-canonical", f"layer_{L}/width_16k/canonical", device=dev)
-        for name, A in ARMS.items():
-            def enc(t):
-                return sae.encode(cache_raw[(name, t)][L].to(dev)).detach().max(0).values.float().cpu().numpy()
-            V = np.stack([enc(p) for p in A["pos"]]) - np.stack([enc(n) for n in A["neg"]])
-            V = V.astype(np.float64)
-            frac, a, _ = lopo_stats(V, A["cluster"])
-            R = results["read"][name]
-            R["sae"][L] = a; R["frac"][L] = frac
-            R["perm_p"][L] = perm_p(V, A["cluster"], frac, n_perm=500 if args.smoke else 4000)
-            R["boot_ci"][L] = cluster_boot_ci(V, A["cluster"], n_boot=300 if args.smoke else 2000)
-            # matched raw-resid (mean-pooled) cross-check
-            Vr = raw_pair_diff[(name, L)]
-            R["raw"][L] = lopo_stats(Vr, A["cluster"])[1]
-            print(f"  [read L{L:>2}] {name:>10}: LOPO-AUROC {a:.2f} (frac {frac:.2f}, p {R['perm_p'][L]:.3f}, "
-                  f"raw {R['raw'][L]:.2f})", flush=True)
-        # unigram harness check at L0: 'greater' vs 'less' must be near-perfectly readable
-        if L == 0 and "comparison" in ARMS and not controls_done:
-            A = ARMS["comparison"]
-            g = [t for t in A["pos"] + A["neg"] if "greater" in t]
-            l = [t for t in A["pos"] + A["neg"] if "less" in t]
-            def encc(t):
-                return sae.encode(cache_raw[("comparison", t)][0].to(dev)).detach().max(0).values.float().cpu().numpy()
-            Vg = np.stack([encc(t) for t in g[:len(l)]]) - np.stack([encc(t) for t in l[:len(g)]])
-            hfrac, hauroc, _ = lopo_stats(Vg.astype(np.float64), list(range(len(Vg))))
-            results["controls"]["unigram_L0_auroc"] = hauroc
-            print(f"  [harness] unigram 'greater vs less' @L0: LOPO-AUROC {hauroc:.2f} (must be ~1.0)", flush=True)
+        sae = None
+        if not read_done:
+            sae = SAE.from_pretrained("gemma-scope-2b-pt-res-canonical", f"layer_{L}/width_16k/canonical", device=dev)
+            for name, A in ARMS.items():
+                def enc(t):
+                    return sae.encode(cache_raw[(name, t)][L].to(dev)).detach().max(0).values.float().cpu().numpy()
+                V = np.stack([enc(p) for p in A["pos"]]) - np.stack([enc(n) for n in A["neg"]])
+                V = V.astype(np.float64)
+                frac, a, _ = lopo_stats(V, A["cluster"])
+                R = results["read"][name]
+                R["sae"][L] = a; R["frac"][L] = frac
+                R["perm_p"][L] = perm_p(V, A["cluster"], frac, n_perm=500 if args.smoke else 4000)
+                R["boot_ci"][L] = cluster_boot_ci(V, A["cluster"], n_boot=300 if args.smoke else 2000)
+                # matched raw-resid (mean-pooled) cross-check
+                Vr = raw_pair_diff[(name, L)]
+                R["raw"][L] = lopo_stats(Vr, A["cluster"])[1]
+                print(f"  [read L{L:>2}] {name:>10}: LOPO-AUROC {a:.2f} (frac {frac:.2f}, p {R['perm_p'][L]:.3f}, "
+                      f"raw {R['raw'][L]:.2f})", flush=True)
+        if sae is not None:
+            del sae
+            if dev == "mps":
+                torch.mps.empty_cache()
+
+    # unigram harness check at L0: 'greater' vs 'less' must be near-perfectly readable
+    if "comparison" in ARMS and "unigram_L0_auroc" not in results["controls"]:
+        sae = SAE.from_pretrained("gemma-scope-2b-pt-res-canonical", "layer_0/width_16k/canonical", device=dev)
+        A = ARMS["comparison"]
+        g = [t for t in A["pos"] + A["neg"] if "greater" in t]
+        l = [t for t in A["pos"] + A["neg"] if "less" in t]
+        def encc(t):
+            return sae.encode(cache_raw[("comparison", t)][0].to(dev)).detach().max(0).values.float().cpu().numpy()
+        Vg = np.stack([encc(t) for t in g[:len(l)]]) - np.stack([encc(t) for t in l[:len(g)]])
+        hfrac, hauroc, _ = lopo_stats(Vg.astype(np.float64), list(range(len(Vg))))
+        results["controls"]["unigram_L0_auroc"] = hauroc
+        print(f"  [harness] unigram 'greater vs less' @L0: LOPO-AUROC {hauroc:.2f} (must be ~1.0)", flush=True)
         del sae
         if dev == "mps":
             torch.mps.empty_cache()
+    controls_done = args.resume and controls_complete(results, ARMS, layers)
 
     # label-shuffle negative control (one seeded cluster-sign flip, full pipeline, SAE read at mid layer)
     if not controls_done:
