@@ -11,7 +11,7 @@ Corrections vs the old pipeline (all from the adversarial design review):
 
 Run `--smoke` first (~10 min): 1 concept, 2 layers, truncated items/probes/nulls, all code paths.
 """
-import argparse, json, sys
+import argparse, json, os, sys
 import numpy as np, torch
 from transformer_lens import HookedTransformer
 from sae_lens import SAE
@@ -93,9 +93,21 @@ def holm(pvals):
     return passed
 
 
+def normalize_loaded_results(results):
+    results["med_norm"] = {int(L): v for L, v in results["med_norm"].items()}
+    for name in results["read"]:
+        R = results["read"][name]
+        for k in ("sae", "raw", "frac", "perm_p", "boot_ci"):
+            R[k] = {int(L): v for L, v in R[k].items()}
+    for name in results["steer"]:
+        results["steer"][name] = {int(L): v for L, v in results["steer"][name].items()}
+    return results
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--resume", action="store_true")
     args = ap.parse_args()
 
     dev = "mps" if torch.backends.mps.is_available() else "cpu"
@@ -158,16 +170,36 @@ def main():
     print("[phase B] cached resids; median per-token norms: " +
           " ".join(f"L{L}:{med_norm[L]:.0f}" for L in layers), flush=True)
 
-    results = {"med_norm": med_norm, "read": {}, "steer": {}, "controls": {}}
+    if args.resume and os.path.exists("phase_bc_results.json"):
+        results = normalize_loaded_results(json.load(open("phase_bc_results.json")))
+    else:
+        results = {"med_norm": med_norm, "read": {}, "steer": {}, "controls": {}}
+    controls_done = args.resume and "controls" in results
+    if "controls" not in results:
+        results["controls"] = {}
     raw_pair_diff = {}                                        # (arm, layer) -> V_raw for steering nulls
     for name, A in ARMS.items():
-        results["read"][name] = {"sae": {}, "raw": {}, "frac": {}, "perm_p": {}, "boot_ci": {}}
+        if name not in results["read"]:
+            results["read"][name] = {"sae": {}, "raw": {}, "frac": {}, "perm_p": {}, "boot_ci": {}}
+        for k in ("sae", "raw", "frac", "perm_p", "boot_ci"):
+            if k not in results["read"][name]:
+                results["read"][name][k] = {}
+    have_embed = args.resume and all("embed_auroc" in results["read"][name] for name in ARMS)
+    if not have_embed:
         # embed-layer leakage gate (raw mean-pooled)
-        Vp = np.stack([cache_raw[(name, t)]["embed"].mean(0).numpy() for t in A["pos"]])
-        Vn = np.stack([cache_raw[(name, t)]["embed"].mean(0).numpy() for t in A["neg"]])
-        frac_e, auroc_e, _ = lopo_stats((Vp - Vn).astype(np.float64), A["cluster"])
-        results["read"][name]["embed_auroc"] = auroc_e
+        for name, A in ARMS.items():
+            Vp = np.stack([cache_raw[(name, t)]["embed"].mean(0).numpy() for t in A["pos"]])
+            Vn = np.stack([cache_raw[(name, t)]["embed"].mean(0).numpy() for t in A["neg"]])
+            frac_e, auroc_e, _ = lopo_stats((Vp - Vn).astype(np.float64), A["cluster"])
+            results["read"][name]["embed_auroc"] = auroc_e
     for L in layers:
+        for name, A in ARMS.items():
+            Vr = (np.stack([cache_raw[(name, t)][L].mean(0).numpy() for t in A["pos"]])
+                  - np.stack([cache_raw[(name, t)][L].mean(0).numpy() for t in A["neg"]])).astype(np.float64)
+            raw_pair_diff[(name, L)] = Vr
+        read_done = args.resume and all(L in results["read"][name]["sae"] for name in ARMS)
+        if read_done:
+            continue
         sae = SAE.from_pretrained("gemma-scope-2b-pt-res-canonical", f"layer_{L}/width_16k/canonical", device=dev)
         for name, A in ARMS.items():
             def enc(t):
@@ -180,14 +212,12 @@ def main():
             R["perm_p"][L] = perm_p(V, A["cluster"], frac, n_perm=500 if args.smoke else 4000)
             R["boot_ci"][L] = cluster_boot_ci(V, A["cluster"], n_boot=300 if args.smoke else 2000)
             # matched raw-resid (mean-pooled) cross-check
-            Vr = (np.stack([cache_raw[(name, t)][L].mean(0).numpy() for t in A["pos"]])
-                  - np.stack([cache_raw[(name, t)][L].mean(0).numpy() for t in A["neg"]])).astype(np.float64)
-            raw_pair_diff[(name, L)] = Vr
+            Vr = raw_pair_diff[(name, L)]
             R["raw"][L] = lopo_stats(Vr, A["cluster"])[1]
             print(f"  [read L{L:>2}] {name:>10}: LOPO-AUROC {a:.2f} (frac {frac:.2f}, p {R['perm_p'][L]:.3f}, "
                   f"raw {R['raw'][L]:.2f})", flush=True)
         # unigram harness check at L0: 'greater' vs 'less' must be near-perfectly readable
-        if L == 0 and "comparison" in ARMS:
+        if L == 0 and "comparison" in ARMS and not controls_done:
             A = ARMS["comparison"]
             g = [t for t in A["pos"] + A["neg"] if "greater" in t]
             l = [t for t in A["pos"] + A["neg"] if "less" in t]
@@ -202,13 +232,14 @@ def main():
             torch.mps.empty_cache()
 
     # label-shuffle negative control (one seeded cluster-sign flip, full pipeline, SAE read at mid layer)
-    for name, A in ARMS.items():
-        cl = np.asarray(A["cluster"]); cids = np.unique(cl)
-        s = np.random.RandomState(7).choice([-1, 1], size=len(cids))
-        sig = s[np.searchsorted(cids, cl)]
-        L = layers[len(layers) // 2]
-        Vr = raw_pair_diff[(name, L)] * sig[:, None]
-        results["controls"][f"shuffled_{name}_L{L}"] = lopo_stats(Vr, A["cluster"])[1]
+    if not controls_done:
+        for name, A in ARMS.items():
+            cl = np.asarray(A["cluster"]); cids = np.unique(cl)
+            s = np.random.RandomState(7).choice([-1, 1], size=len(cids))
+            sig = s[np.searchsorted(cids, cl)]
+            L = layers[len(layers) // 2]
+            Vr = raw_pair_diff[(name, L)] * sig[:, None]
+            results["controls"][f"shuffled_{name}_L{L}"] = lopo_stats(Vr, A["cluster"])[1]
 
     with open("phase_bc_results.json", "w") as f:
         json.dump(results, f, indent=2, default=float)
@@ -217,11 +248,17 @@ def main():
     # ============ PHASE C: steer sweep ============
     alpha = 12.0 / med_norm[12] if 12 in [*med_norm] else 12.0 / med_norm[layers[len(layers) // 2]]
     for name, A in ARMS.items():
-        results["steer"][name] = {}
+        if name not in results["steer"]:
+            results["steer"][name] = {}
     for L in layers:
+        steer_done = args.resume and all(L in results["steer"][name] for name in ARMS)
+        if steer_done:
+            continue
         sae = SAE.from_pretrained("gemma-scope-2b-pt-res-canonical", f"layer_{L}/width_16k/canonical", device=dev)
         base_scale = alpha * med_norm[L]
         for name, A in ARMS.items():
+            if args.resume and L in results["steer"][name]:
+                continue
             fs = FeatureScope(layer=L, concept=A["spec"], model=model, sae=sae).fit(A["pos"], A["neg"])
             fs._gen.manual_seed(0)
             du = fs._diffmeans / fs._diffmeans.norm()
