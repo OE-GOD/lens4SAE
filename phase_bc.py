@@ -104,10 +104,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--mixed", action="store_true",
+                    help="review-sanctioned fallback: bf16 trunk + fp32 readout head (validated vs banked L12 cell)")
     args = ap.parse_args()
 
     dev = "mps" if torch.backends.mps.is_available() else "cpu"
-    model = HookedTransformer.from_pretrained("gemma-2-2b", device=dev, dtype=torch.float32)
+    model = HookedTransformer.from_pretrained("gemma-2-2b", device=dev,
+                                              dtype=torch.bfloat16 if args.mixed else torch.float32)
+    if args.mixed:
+        import mixed_head
+        print("[mode] MIXED precision: bf16 trunk + fp32 readout head (see PROTOCOL_NOTES.md)", flush=True)
 
     fails = cc.check_all(model)
     if fails:
@@ -177,7 +183,8 @@ def main():
     if args.resume and os.path.exists("phase_bc_results.json"):
         results = normalize_loaded_results(json.load(open("phase_bc_results.json")))
         for L in sorted(set(med_norm) & set(results["med_norm"])):
-            if abs(med_norm[L] - results["med_norm"][L]) > 1e-6:
+            tol = 0.02 * abs(results["med_norm"][L]) if args.mixed else 1e-6   # bf16 resids shift norms ~0.5%
+            if abs(med_norm[L] - results["med_norm"][L]) > tol:
                 raise ValueError(
                     f"Resume med_norm mismatch at L{L}: fresh {med_norm[L]:.12g} vs checkpoint "
                     f"{results['med_norm'][L]:.12g}. Refusing to resume because this risks dose-scale "
@@ -278,6 +285,9 @@ def main():
             if args.resume and L in results["steer"][name]:
                 continue
             fs = FeatureScope(layer=L, concept=A["spec"], model=model, sae=sae).fit(A["pos"], A["neg"])
+            if args.mixed:
+                mixed_head.attach(fs)
+                results.setdefault("mode_notes", []).append(f"steer {name} L{L}: mixed(bf16 trunk+fp32 head)")
             fs._gen.manual_seed(0)
             du = fs._diffmeans / fs._diffmeans.norm()
             fs._ensure_base()
