@@ -4,16 +4,20 @@
 All on Gemma-2-2b + Gemma Scope SAEs; small curated example sets; a 2B model — treat as suggestive,
 not settled. Every claim is reproducible from the scripts named below.*
 
-> **⚠️ Methodological caveat (2026-07-01, re-measurement in progress).** An adversarial design review
-> of the follow-up experiment found two instrument problems that make the numbers below suspect until
-> re-measured: (1) the read-depth estimator scores **in-sample** (the diff-of-means direction is fit on
-> the same items it is evaluated on), which at this n and dimensionality can inflate separability
-> dramatically (verified: AUROC ≈ 1.0 on pure noise at n=40, d=16k) — the fix is leave-one-pair-out CV;
-> (2) steering used a **fixed norm at every layer** while residual norms grow with depth, a confound
-> that mechanically biases steer-depth shallow — the fix is per-layer-scaled doses. The *relative*
-> depth patterns may survive re-measurement; the pre-registered re-run (with the corrected estimator,
-> per-layer dosing, fp32 readout, and permutation nulls) is underway and this note will be replaced by
-> whatever it finds — including a retraction if the pattern does not survive.
+> **RE-MEASUREMENT OUTCOME (2026-07-03).** The pre-registered re-run (PREREG.md, commit 59d8bdc;
+> corrections in PROTOCOL_NOTES.md) is complete. Formal verdict: **INSTRUMENT FAILURE** — the corrected
+> steering gate's label-permutation nulls retain concept signal, so no positive steering effect (not
+> even sentiment at 3.4 logits) can certify; all steer-depths below are therefore **retracted as
+> unmeasurable**, neither confirmed nor refuted. What survived, strengthened: **arithmetic reads late**
+> (read-depth L20 in both representations, leave-pairs-out CV, permutation p = 0.000 — the predicted
+> bin, confirmed) and the **L20 backfire** (steering "correct" at the committal layer: dose-monotone
+> crash to −1.34, z = −5.8, sign-test p = 0.0002, negation and cross-concept controls clean) — though
+> the backfire is a one-layer knife edge (L19 +1.16, L20 −1.34, L21 0.00) and thus fails the
+> pre-registered two-adjacent-layer replication clause: reported as strong-but-formally-unconfirmed.
+> Of the three generalization concepts: parity died of a dataset artifact its 0.00 anti-ordered read
+> exposed, capitals of a pre-registered permutation power floor, comparison tripped the L0 leak gate
+> (embed-layer clean — likely block-0 computation, not a data leak; unevaluable by the letter).
+> Full record: phase_bc_results.json, phase_d_results.json, score_verdict.py output.
 
 ## The question
 
