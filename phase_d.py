@@ -175,6 +175,7 @@ def run_layer(model, arms, cache_raw, med_norm, alpha, arm_name, L, args):
                               device=model.cfg.device)
     try:
         fs = FeatureScope(layer=L, concept=A["spec"], model=model, sae=sae).fit(A["pos"], A["neg"])
+        import mixed_head as _mh; _mh.attach(fs)
         fs._gen.manual_seed(0)
         du = fs._diffmeans / fs._diffmeans.norm()
         dose, dose_median, per_probe, ci4, sign_p = measure_direction(fs, du, base_scale, args.n_boot)
@@ -193,6 +194,7 @@ def run_layer(model, arms, cache_raw, med_norm, alpha, arm_name, L, args):
             S = arms["sentiment"]
             sent_spec = probe_limited_spec(S["spec"], 8 if args.smoke else None)
             sent_fs = FeatureScope(layer=L, concept=sent_spec, model=model, sae=sae).fit(S["pos"], S["neg"])
+            import mixed_head as _mh2; _mh2.attach(sent_fs)
             sent_fs._ensure_base()
             sent_shifts4 = sent_fs._dir_shift(du * (base_scale * STRENGTHS[-1]))
             sent_ci4 = bootstrap_mean_ci(sent_shifts4, args.n_boot)
@@ -266,7 +268,9 @@ def main():
 
     layers = sorted({12} | {L for c in candidates.values() for L in c["grid"]})
     dev = "mps" if torch.backends.mps.is_available() else "cpu"
-    model = HookedTransformer.from_pretrained("gemma-2-2b", device=dev, dtype=torch.float32)
+    model = HookedTransformer.from_pretrained("gemma-2-2b", device=dev, dtype=torch.bfloat16)
+    import mixed_head   # PROTOCOL_NOTES.md Note 2: bf16 trunk + fp32 readout head (validated)
+    print("[mode] MIXED precision (see PROTOCOL_NOTES.md)", flush=True)
     cache_raw, med_norm = cache_fit_resids(model, arms, layers, candidates.keys())
     alpha = 12.0 / med_norm[12]
 
