@@ -1,0 +1,61 @@
+"""FeatureScope Playground — poke the model's mind, live.
+
+Serves a local page: type a sentence -> see sentiment readout + which SAE features fire;
+pick a feature + dose -> steer and watch the readout move. stdlib-only server.
+"""
+import json, torch, numpy as np
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from transformer_lens import HookedTransformer
+from sae_lens import SAE
+
+print("loading model (bf16)...", flush=True)
+model = HookedTransformer.from_pretrained("gemma-2-2b", device="mps", dtype=torch.bfloat16)
+sae = SAE.from_pretrained("gemma-scope-2b-pt-res", "layer_12/width_16k/average_l0_82", device="mps")
+HOOK = sae.cfg.metadata["hook_name"]
+Wdec = sae.W_dec.detach()
+FEW = ("Review: A wonderful, heartwarming film.\nSentiment: positive\n"
+       "Review: A boring, pointless waste of time.\nSentiment: negative\n")
+POS = model.to_tokens(" positive", prepend_bos=False)[0, 0]
+NEG = model.to_tokens(" negative", prepend_bos=False)[0, 0]
+try:
+    KNOWN = {f["feature"]: f for f in json.load(open("screen_sentiment.json"))["features"]}
+except Exception:
+    KNOWN = {}
+
+def readout(text, steer=None):
+    hooks = [(HOOK, lambda r, hook: r + steer)] if steer is not None else []
+    with torch.no_grad():
+        lg = model.run_with_hooks(model.to_tokens(FEW + f"Review: {text}\nSentiment:"), fwd_hooks=hooks)
+    return float(lg[0, -1, POS] - lg[0, -1, NEG])
+
+def analyze(text):
+    with torch.no_grad():
+        _, c = model.run_with_cache(model.to_tokens(text[:300]), names_filter=[HOOK])
+        acts = sae.encode(c[HOOK][0]).float().max(0).values.cpu().numpy()
+    top = np.argsort(-acts)[:12]
+    feats = [{"id": int(f), "act": round(float(acts[f]), 2),
+              "verdict": KNOWN.get(int(f), {}).get("verdict", "unscreened"),
+              "fires_on": KNOWN.get(int(f), {}).get("fires_on", "")} for f in top if acts[f] > 0]
+    return {"readout": round(readout(text), 3), "features": feats}
+
+def steer(text, feat, dose):
+    d = Wdec[feat]; v = (d / d.norm() * dose).to(model.cfg.dtype)
+    base = readout(text); pushed = readout(text, v)
+    return {"base": round(base, 3), "steered": round(pushed, 3), "delta": round(pushed - base, 3)}
+
+PAGE = open("playground.html").read()
+
+class H(BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def _send(self, body, ctype="application/json"):
+        b = body.encode(); self.send_response(200)
+        self.send_header("Content-Type", ctype); self.send_header("Content-Length", len(b))
+        self.end_headers(); self.wfile.write(b)
+    def do_GET(self): self._send(PAGE, "text/html")
+    def do_POST(self):
+        req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if self.path == "/analyze": self._send(json.dumps(analyze(req["text"])))
+        elif self.path == "/steer": self._send(json.dumps(steer(req["text"], int(req["feature"]), float(req["dose"]))))
+
+print("PLAYGROUND READY -> http://localhost:8765", flush=True)
+HTTPServer(("127.0.0.1", 8765), H).serve_forever()

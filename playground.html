@@ -1,0 +1,54 @@
+<!doctype html><meta charset="utf-8"><title>FeatureScope Playground</title>
+<style>
+body{font:15px/1.5 -apple-system,system-ui,sans-serif;color:#1a1a19;max-width:760px;margin:28px auto;padding:0 16px}
+h1{font-size:20px} textarea{width:100%;font:inherit;padding:10px;border:1px solid #ccc;border-radius:8px}
+button{font:inherit;padding:8px 18px;border:0;border-radius:8px;background:#2a78d6;color:#fff;cursor:pointer}
+button:disabled{background:#aaa}.gauge{height:26px;background:#f0f0ef;border-radius:13px;position:relative;margin:14px 0;overflow:hidden}
+.fill{position:absolute;top:0;bottom:0;transition:all .4s}.zero{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#999}
+.glabel{text-align:center;font-size:13px;color:#666}
+.chip{display:inline-block;margin:4px 6px 0 0;padding:5px 10px;border-radius:8px;border:2px solid transparent;cursor:pointer;font-size:13px;background:#f4f4f3}
+.chip.sel{border-color:#1a1a19}.chip b{margin-right:6px}
+.v-not_ruled_out{box-shadow:inset 4px 0 #2a78d6}.v-ruled_out{box-shadow:inset 4px 0 #1baf7a}
+.v-indeterminate{box-shadow:inset 4px 0 #eda100}.v-unscreened{box-shadow:inset 4px 0 #ccc}
+.panel{border:1px solid #e5e5e5;border-radius:10px;padding:14px 16px;margin:16px 0}
+.delta{font-size:22px;font-weight:600}.muted{color:#666;font-size:13px}input[type=range]{width:240px;vertical-align:middle}
+</style>
+<h1>🔬 FeatureScope Playground</h1>
+<p class="muted">Type a sentence → see the model's mind. Click a feature → push it → see if behavior moves.
+<b style="color:#2a78d6">blue</b>=driver-like <b style="color:#1baf7a">green</b>=thermometer <b style="color:#eda100">yellow</b>=indeterminate gray=unscreened</p>
+<textarea id="txt" rows="2">The movie was okay, I guess.</textarea>
+<p><button id="go">Read its mind</button></p>
+<div id="mind" style="display:none">
+  <div class="glabel">model's sentiment verdict (negative ← → positive)</div>
+  <div class="gauge"><div class="zero"></div><div id="fill" class="fill"></div></div>
+  <div class="glabel" id="score"></div>
+  <h3 style="font-size:15px">Features firing (its "thoughts")</h3><div id="chips"></div>
+  <div class="panel" id="steerbox" style="display:none">
+    <b id="steertitle"></b><span class="muted" id="fireson"></span><br>
+    push strength <input type="range" id="dose" min="0" max="40" value="15">
+    <span id="doseval">15</span> <button id="push">Push it</button>
+    <div id="result" class="muted" style="margin-top:8px"></div>
+  </div>
+</div>
+<script>
+let sel=null;
+const $=id=>document.getElementById(id);
+function gauge(v){const pct=Math.max(-1,Math.min(1,v/4));const f=$("fill");
+ if(pct>=0){f.style.left="50%";f.style.width=(pct*50)+"%";f.style.background="#2a78d6"}
+ else{f.style.width=(-pct*50)+"%";f.style.left=(50+pct*50)+"%";f.style.background="#e34948"}
+ $("score").textContent="score "+v.toFixed(2)}
+$("go").onclick=async()=>{$("go").disabled=true;$("go").textContent="reading...";
+ const r=await(await fetch("/analyze",{method:"POST",body:JSON.stringify({text:$("txt").value})})).json();
+ $("mind").style.display="block";gauge(r.readout);
+ $("chips").innerHTML=r.features.map(f=>`<span class="chip v-${f.verdict}" onclick="pick(${f.id},'${f.verdict}',this)"><b>${f.id}</b>${f.act}</span>`).join("");
+ $("steerbox").style.display="none";$("go").disabled=false;$("go").textContent="Read its mind"};
+function pick(id,v,el){sel=id;document.querySelectorAll(".chip").forEach(c=>c.classList.remove("sel"));el.classList.add("sel");
+ $("steerbox").style.display="block";$("steertitle").textContent="feature "+id+" ("+v.replace(/_/g," ")+") ";
+ $("fireson").textContent="";$("result").textContent=""}
+$("dose").oninput=()=>$("doseval").textContent=$("dose").value;
+$("push").onclick=async()=>{$("push").disabled=true;$("push").textContent="pushing...";
+ const r=await(await fetch("/steer",{method:"POST",body:JSON.stringify({text:$("txt").value,feature:sel,dose:$("dose").value})})).json();
+ gauge(r.steered);
+ $("result").innerHTML=`before <b>${r.base}</b> → after <b>${r.steered}</b> &nbsp; <span class="delta" style="color:${Math.abs(r.delta)>0.3?"#2a78d6":"#999"}">Δ ${r.delta>0?"+":""}${r.delta}</span> ${Math.abs(r.delta)>0.3?"— it moved! this thought DOES something":"— barely moved: gauge, not lever"}`;
+ $("push").disabled=false;$("push").textContent="Push it"};
+</script>
