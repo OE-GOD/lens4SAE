@@ -1,0 +1,220 @@
+{
+  "concept": "sentiment",
+  "self_test": {
+    "driver_z": 6.610009442870633,
+    "null_z": -0.6744907594765952,
+    "passed": true
+  },
+  "drivers": [
+    8836,
+    5277,
+    6754,
+    7234,
+    10511,
+    13435,
+    13367,
+    1369
+  ],
+  "ruled_out_thermometers": [
+    5240
+  ],
+  "indeterminate": [
+    8000,
+    14733,
+    5082
+  ],
+  "features": [
+    {
+      "feature": 8836,
+      "read": -0.776,
+      "dose": [
+        0.62,
+        0.88,
+        1.38
+      ],
+      "z": 8.09,
+      "frac": 1.0,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.125,
+      "role": "redundant (sufficient only)",
+      "fires_on": "A disaster from start to finish."
+    },
+    {
+      "feature": 5277,
+      "read": -0.67,
+      "dose": [
+        0.75,
+        1.12,
+        2.0
+      ],
+      "z": 8.09,
+      "frac": 1.455,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.062,
+      "role": "redundant (sufficient only)",
+      "fires_on": "Shoddy work."
+    },
+    {
+      "feature": 6754,
+      "read": 0.826,
+      "dose": [
+        0.38,
+        0.5,
+        1.56
+      ],
+      "z": 7.28,
+      "frac": 1.136,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.0,
+      "role": "redundant (sufficient only)",
+      "fires_on": "A wonderful, heartwarming film."
+    },
+    {
+      "feature": 7234,
+      "read": -0.957,
+      "dose": [
+        0.94,
+        1.88,
+        1.94
+      ],
+      "z": 6.17,
+      "frac": 1.409,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.75,
+      "role": "lever (sufficient+necessary)",
+      "fires_on": "Clumsy, unfunny, and dumb."
+    },
+    {
+      "feature": 10511,
+      "read": 0.865,
+      "dose": [
+        0.0,
+        0.19,
+        0.56
+      ],
+      "z": 4.72,
+      "frac": 0.409,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.0,
+      "role": "redundant (sufficient only)",
+      "fires_on": "Beautifully made and deeply satisfying."
+    },
+    {
+      "feature": 13435,
+      "read": 0.763,
+      "dose": [
+        0.31,
+        1.12,
+        1.81
+      ],
+      "z": 4.55,
+      "frac": 1.318,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.375,
+      "role": "lever (sufficient+necessary)",
+      "fires_on": "An absolute masterpiece."
+    },
+    {
+      "feature": 13367,
+      "read": -0.773,
+      "dose": [
+        0.75,
+        0.69,
+        1.44
+      ],
+      "z": 4.53,
+      "frac": 1.045,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.125,
+      "role": "redundant (sufficient only)",
+      "fires_on": "A boring, pointless waste of time."
+    },
+    {
+      "feature": 1369,
+      "read": -0.787,
+      "dose": [
+        0.62,
+        1.06,
+        0.81
+      ],
+      "z": 3.47,
+      "frac": 0.773,
+      "sustained": true,
+      "verdict": "not_ruled_out",
+      "necessity": 0.062,
+      "role": "redundant (sufficient only)",
+      "fires_on": "Truly dreadful."
+    },
+    {
+      "feature": 8000,
+      "read": 0.919,
+      "dose": [
+        0.38,
+        0.62,
+        0.19
+      ],
+      "z": 2.7,
+      "frac": 0.455,
+      "sustained": false,
+      "verdict": "indeterminate",
+      "necessity": 0.438,
+      "role": "circuit-part (necessary only)",
+      "fires_on": "A triumph from start to finish."
+    },
+    {
+      "feature": 14733,
+      "read": -0.651,
+      "dose": [
+        0.5,
+        0.56,
+        0.12
+      ],
+      "z": 2.53,
+      "frac": 0.409,
+      "sustained": false,
+      "verdict": "indeterminate",
+      "necessity": 0.0,
+      "role": "bystander",
+      "fires_on": "A disaster from start to finish."
+    },
+    {
+      "feature": 5082,
+      "read": -0.735,
+      "dose": [
+        0.25,
+        0.5,
+        0.62
+      ],
+      "z": 1.48,
+      "frac": 0.455,
+      "sustained": true,
+      "verdict": "indeterminate",
+      "necessity": -0.125,
+      "role": "bystander",
+      "fires_on": "Ugly and boring."
+    },
+    {
+      "feature": 5240,
+      "read": -0.63,
+      "dose": [
+        0.0,
+        0.0,
+        -0.12
+      ],
+      "z": -0.67,
+      "frac": 0.0,
+      "sustained": false,
+      "verdict": "ruled_out",
+      "necessity": 0.0,
+      "role": "bystander",
+      "fires_on": "Poorly made and deeply frustrating."
+    }
+  ]
+}
