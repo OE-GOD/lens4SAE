@@ -29,7 +29,7 @@ button:disabled{background:#aaa}.gauge{height:26px;background:#f0f0ef;border-rad
   <div id="tokstrip" class="muted" style="margin:10px 0;line-height:2"></div>
 <h3 style="font-size:15px">Features firing (its "thoughts") — <span class="muted" style="font-weight:400">click one to see where it looks</span></h3><div id="chips"></div>
   <div class="panel" id="steerbox" style="display:none">
-    <b id="steertitle"></b><span class="muted" id="fireson"></span><br>
+    <b id="steertitle"></b> <a id="nplink" target="_blank" style="font-size:12px">Neuronpedia ↗</a><span class="muted" id="fireson"></span><br>
     push strength <input type="range" id="dose" min="0" max="40" value="15">
     <span id="doseval">15</span> <button id="push">Push it</button>
     <div id="result" class="muted" style="margin-top:8px"></div>
@@ -49,7 +49,7 @@ $("go").onclick=async()=>{$("go").disabled=true;$("go").textContent="reading..."
  $("chips").innerHTML=r.features.map((f,j)=>`<span class="chip v-${f.verdict}" onclick="pick(${j},'${f.verdict}',this)"><b>${f.id}</b>${f.act}<span class="tag">${TAG[f.verdict]}</span></span>`).join("");
  $("steerbox").style.display="none";$("go").disabled=false;$("go").textContent="Read its mind"};
 function pick(id,v,el){sel=id;document.querySelectorAll(".chip").forEach(c=>c.classList.remove("sel"));el.classList.add("sel");
- $("steerbox").style.display="block";$("steertitle").textContent="feature "+ANA.features[j].id+" ("+v.replace(/_/g," ")+") ";showTokens(ANA.features[j]);
+ $("steerbox").style.display="block";document.getElementById("nplink").href="https://www.neuronpedia.org/gemma-2-2b/12-gemmascope-res-16k/"+(typeof ANA!=="undefined"&&ANA?ANA.features[j].id:DATA[cur].features[j].id);/*np_set*/$("steertitle").textContent="feature "+ANA.features[j].id+" ("+v.replace(/_/g," ")+") ";showTokens(ANA.features[j]);
  $("fireson").textContent="";$("result").textContent=""}
 $("dose").oninput=()=>$("doseval").textContent=$("dose").value;
 $("push").onclick=async()=>{$("push").disabled=true;$("push").textContent="pushing...";
@@ -66,7 +66,7 @@ $("scr").onclick=async()=>{$("scr").disabled=true;$("scr").textContent="screenin
   r.rows.map(x=>{const w=Math.abs(x.d30)/mx*100, pos=x.d30>0;
    const cmax=Math.max(...r.rows.flatMap(y=>y.curve.map(Math.abs)),0.01);
    const spark=x.curve.map((v,i)=>`${18+i*24},${30-v/cmax*24}`).join(" ");
-   return `<div style="margin:7px 0;font-size:13px"><b style="width:52px;display:inline-block">${x.id}</b>`+
+   return `<div style="margin:7px 0;font-size:13px"><a href="https://www.neuronpedia.org/gemma-2-2b/12-gemmascope-res-16k/${x.id}" target="_blank" style="width:52px;display:inline-block;font-weight:700;text-decoration:none;color:#1a1a19">${x.id}↗</a>`+
    `<svg width="100" height="60" style="vertical-align:middle"><line x1="10" y1="30" x2="96" y2="30" stroke="#ddd"/><polyline points="${spark}" fill="none" stroke="${pos?"#2a78d6":"#e34948"}" stroke-width="2"/>`+x.curve.map((v,i)=>`<circle cx="${18+i*24}" cy="${30-v/cmax*24}" r="2.5" fill="${pos?"#2a78d6":"#e34948"}"/>`).join("")+`</svg>`+
    ` Δhard ${x.d30>0?"+":""}${x.d30} <b style="color:${x.tag.startsWith("DRIVES")?"#1c5eb0":x.tag==="WEAK"?"#a06d00":"#999"}">${x.tag}</b></div>`}).join("")+
   "<div class='muted'>Each mini-curve = effect at gentle→hard pushes (8/15/30/60). Straight rising line = honest lever; hook shape = saturates off-manifold. DRIVES = beats noise 2x and grows · WEAK = above noise · INERT = within noise. Blue = pushes positive, red = pushes negative. Quick screen — the formal tool adds doses, stats and controls.</div>";
