@@ -1,6 +1,6 @@
-# FeatureScope
+# Lens4SAE
 
-**Screen SAE features as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
+**A lens into SAE features: screen them as *drivers* vs *thermometers* — so you don't reward a signal the model can game.**
 
 *Status: research prototype (v0.12) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
 

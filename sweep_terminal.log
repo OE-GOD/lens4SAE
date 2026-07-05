@@ -1,0 +1,54 @@
+/Users/oe/sae_project/.venv/lib/python3.12/site-packages/transformer_lens/config/HookedTransformerConfig.py:341: UserWarning: MPS backend may produce silently incorrect results (PyTorch 2.11.0). Set TRANSFORMERLENS_ALLOW_MPS=1 to suppress this warning. See: https://github.com/TransformerLensOrg/TransformerLens/issues/1178
+  warn_if_mps(self.device)
+WARNING:root:You tried to specify center_unembed=True for a model using logit softcap, but this can't be done! Softcapping is not invariant upon adding a constant Setting center_unembed=False instead.
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights: 100%|██████████| 288/288 [00:00<00:00, 6719.14it/s]
+Loaded pretrained model gemma-2-2b into HookedTransformer
+[assertions] all dataset invariants hold (token multisets, vocab disjointness, no trailing '.')
+[phase B] cached resids; median per-token norms: L0:67 L4:86 L8:116 L12:145 L16:239 L20:348 L24:583
+[phase B] done; checkpoint saved
+/opt/homebrew/Cellar/python@3.12/3.12.13_2/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/Users/oe/sae_project/.venv/lib/python3.12/site-packages/transformer_lens/config/HookedTransformerConfig.py:341: UserWarning: MPS backend may produce silently incorrect results (PyTorch 2.11.0). Set TRANSFORMERLENS_ALLOW_MPS=1 to suppress this warning. See: https://github.com/TransformerLensOrg/TransformerLens/issues/1178
+  warn_if_mps(self.device)
+WARNING:root:You tried to specify center_unembed=True for a model using logit softcap, but this can't be done! Softcapping is not invariant upon adding a constant Setting center_unembed=False instead.
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights: 100%|██████████| 288/288 [00:00<00:00, 5374.06it/s]
+Loaded pretrained model gemma-2-2b into HookedTransformer
+[assertions] all dataset invariants hold (token multisets, vocab disjointness, no trailing '.')
+[phase B] cached resids; median per-token norms: L0:67 L4:86 L8:116 L12:145 L16:239 L20:348 L24:583
+[phase B] done; checkpoint saved
+/opt/homebrew/Cellar/python@3.12/3.12.13_2/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/Users/oe/sae_project/.venv/lib/python3.12/site-packages/transformer_lens/config/HookedTransformerConfig.py:341: UserWarning: MPS backend may produce silently incorrect results (PyTorch 2.11.0). Set TRANSFORMERLENS_ALLOW_MPS=1 to suppress this warning. See: https://github.com/TransformerLensOrg/TransformerLens/issues/1178
+  warn_if_mps(self.device)
+WARNING:root:You tried to specify center_unembed=True for a model using logit softcap, but this can't be done! Softcapping is not invariant upon adding a constant Setting center_unembed=False instead.
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights:   0%|          | 1/288 [00:02<10:59,  2.30s/it]Loading weights:  77%|███████▋  | 223/288 [00:02<00:00, 115.49it/s]Loading weights:  92%|█████████▏| 265/288 [00:03<00:00, 87.40it/s] Loading weights: 100%|██████████| 288/288 [00:03<00:00, 73.74it/s]
+WARNING:root:With reduced precision, it is advised to use `from_pretrained_no_processing` instead of `from_pretrained`.
+Loaded pretrained model gemma-2-2b into HookedTransformer
+[mode] MIXED precision: bf16 trunk + fp32 readout head (see PROTOCOL_NOTES.md)
+[assertions] all dataset invariants hold (token multisets, vocab disjointness, no trailing '.')
+[phase B] cached resids; median per-token norms: L0:67 L4:86 L8:116 L12:145 L16:238 L20:348 L24:583
+[phase B] done; checkpoint saved
+  [steer L16] comparison: dose [0.12, 0.28, 0.58]  z   1.5  p 0.059  sust True  ci4 [0.57,0.59]  (fixed12 [0.08, 0.17, 0.36])
+  [steer L16]   capitals: dose [0.05, 0.11, 0.28]  z   0.4  p 0.294  sust True  ci4 [0.25,0.34]  (fixed12 [0.03, 0.08, 0.14])
+  [steer L16]     parity: dose [0.16, 0.32, 0.66]  z   1.9  p 0.118  sust True  ci4 [0.65,0.67]  (fixed12 [0.09, 0.2, 0.4])
+  [steer L16]      arith: dose [0.21, 0.45, 0.77]  z   1.2  p 0.118  sust True  ci4 [0.70,0.79]  (fixed12 [0.11, 0.25, 0.52])
+  [steer L16]  sentiment: dose [0.45, 0.97, 2.09]  z   1.6  p 0.059  sust True  ci4 [2.03,2.40]  (fixed12 [0.26, 0.55, 1.19])
+  [steer L20] comparison: dose [0.16, 0.33, 0.76]  z   2.1  p 0.176  sust True  ci4 [0.75,0.76]  (fixed12 [0.06, 0.13, 0.27])
+  [steer L20]   capitals: dose [0.02, 0.06, 0.26]  z   0.8  p 0.353  sust True  ci4 [0.24,0.30]  (fixed12 [0.0, 0.03, 0.05])
+  [steer L20]     parity: dose [0.11, 0.27, 0.69]  z   1.8  p 0.059  sust True  ci4 [0.68,0.70]  (fixed12 [0.05, 0.08, 0.21])
+  [steer L20]      arith: dose [-0.16, -0.55, -1.26]  z  -5.7  p 0.941  sust False  ci4 [-1.58,-1.15]  (fixed12 [-0.04, -0.12, -0.42])
+  [steer L20]  sentiment: dose [0.59, 1.32, 3.38]  z   2.3  p 0.118  sust True  ci4 [3.39,4.05]  (fixed12 [0.21, 0.47, 1.05])
+  [steer L24] comparison: dose [0.12, 0.27, 0.69]  z   1.5  p 0.059  sust True  ci4 [0.68,0.69]  (fixed12 [0.03, 0.06, 0.12])
+  [steer L24]   capitals: dose [0.05, 0.12, 0.26]  z   2.0  p 0.118  sust True  ci4 [0.26,0.28]  (fixed12 [0.01, 0.03, 0.05])
+  [steer L24]     parity: dose [0.01, 0.04, 0.14]  z   0.3  p 0.529  sust True  ci4 [0.13,0.15]  (fixed12 [0.0, 0.01, 0.01])
+  [steer L24]      arith: dose [-0.05, -0.1, -0.24]  z  -1.2  p 0.765  sust False  ci4 [-0.31,-0.21]  (fixed12 [-0.01, -0.02, -0.05])
+  [steer L24]  sentiment: dose [0.38, 0.8, 1.81]  z   1.5  p 0.059  sust True  ci4 [1.78,2.19]  (fixed12 [0.09, 0.18, 0.38])
+
+=== PRE-REGISTERED VERDICTS ===
+comparison: read-depth L16 (peak 0.97, embed 0.42, LEAKY)  steer-depth none  reversal no  [gates not met]
+  capitals: read-depth L8 (peak 1.00, embed 0.62, LEAKY)  steer-depth none  reversal no  [gates not met]
+    parity: read-depth UNDEFINED (peak 0.00, embed 0.00)  steer-depth none  reversal no  [gates not met]
+     arith: read-depth L20 (peak 1.00, embed 0.38)  steer-depth none  reversal no
+ sentiment: read-depth UNDEFINED (peak 1.00, embed 1.00, LEAKY)  steer-depth L0  reversal no  [gates not met]
+
+saved phase_bc_results.json — Phase D (confirmatory backfire) runs only on qualifying concepts.

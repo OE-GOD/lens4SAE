@@ -1,0 +1,27 @@
+/Users/oe/sae_project/.venv/lib/python3.12/site-packages/transformer_lens/config/HookedTransformerConfig.py:341: UserWarning: MPS backend may produce silently incorrect results (PyTorch 2.11.0). Set TRANSFORMERLENS_ALLOW_MPS=1 to suppress this warning. See: https://github.com/TransformerLensOrg/TransformerLens/issues/1178
+  warn_if_mps(self.device)
+WARNING:root:You tried to specify center_unembed=True for a model using logit softcap, but this can't be done! Softcapping is not invariant upon adding a constant Setting center_unembed=False instead.
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights:   0%|          | 1/288 [00:06<31:00,  6.48s/it]Loading weights:  84%|████████▎ | 241/288 [00:06<00:00, 51.77it/s]Loading weights: 100%|██████████| 288/288 [00:07<00:00, 37.30it/s]
+WARNING:root:With reduced precision, it is advised to use `from_pretrained_no_processing` instead of `from_pretrained`.
+Loaded pretrained model gemma-2-2b into HookedTransformer
+[calibrate:sentiment] synthetic-driver z=6.61  random-null z=-0.67  (driver gate z>=3.0, rule-out z<=1.0; dose-response @ (1.0, 2.0, 4.0))
+[self-test] PASSED (synthetic driver must clear the driver gate at high strength; random null must not)
+
+concept: sentiment   (dose-response @ (1.0, 2.0, 4.0); z=sufficiency, nec=necessity)
+ feature      z    nec   role (2x2)                      fires hardest on
+    8836    8.1   0.12   redundant (sufficient only)     'A disaster from start to finish.'
+    5277    8.1   0.06   redundant (sufficient only)     'Shoddy work.'
+    6754    7.3   0.00   redundant (sufficient only)     'A wonderful, heartwarming film.'
+    7234    6.2   0.75   lever (sufficient+necessary)    'Clumsy, unfunny, and dumb.'
+   10511    4.7   0.00   redundant (sufficient only)     'Beautifully made and deeply satisfying.'
+   13435    4.6   0.38   lever (sufficient+necessary)    'An absolute masterpiece.'
+   13367    4.5   0.12   redundant (sufficient only)     'A boring, pointless waste of time.'
+    1369    3.5   0.06   redundant (sufficient only)     'Truly dreadful.'
+    8000    2.7   0.44   circuit-part (necessary only)   'A triumph from start to finish.'
+   14733    2.5   0.00   bystander                       'A disaster from start to finish.'
+    5082    1.5  -0.12   bystander                       'Ugly and boring.'
+    5240   -0.7   0.00   bystander                       'Poorly made and deeply frustrating.'
+
+RULED OUT (do NOT use as rewards): [5240]
+Honest scope: ONE-SIDED NEGATIVE screen. Driver = SUSTAINED, significant dose-response (z vs a high-strength noise floor); saturating/collapsing features are INDETERMINATE, not drivers. 'not_ruled_out' is NOT a safety certificate. z gates are cross-domain defaults pending leave-one-concept-out validation across more concepts; true gold = gaming under optimization (GPU).
+wrote screen_sentiment.json

@@ -63,14 +63,14 @@ def main(src, dst):
 
     legend = "".join(f'<span style="margin-right:18px"><span class="chip" style="background:{c}"></span>{name}</span>'
                      for c,name,_ in VC.values())
-    page = f"""<meta charset="utf-8"><title>FeatureScope report — {concept}</title>
+    page = f"""<meta charset="utf-8"><title>Lens4SAE report — {concept}</title>
 <style>body{{font:14px/1.5 -apple-system,system-ui,sans-serif;color:#1a1a19;max-width:900px;margin:32px auto;padding:0 16px}}
 h1{{font-size:20px}} .tiles{{display:flex;gap:14px;margin:18px 0}} .tile{{border:1px solid #e5e5e5;border-radius:8px;padding:12px 18px}}
 .tile b{{font-size:26px;display:block}} .tile span{{color:#666;font-size:12px}}
 table{{border-collapse:collapse;width:100%;font-size:13px}} td,th{{padding:6px 8px;border-bottom:1px solid #eee;text-align:left}}
 .chip{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}} .fire{{color:#666;font-style:italic}}
 .minis{{display:flex;flex-wrap:wrap;gap:6px}} .note{{color:#666;font-size:12px;margin-top:22px}}</style>
-<h1>FeatureScope screening report — concept: {concept}</h1>
+<h1>Lens4SAE screening report — concept: {concept}</h1>
 <div class="tiles"><div class="tile"><b>{n}</b><span>features screened</span></div>
 <div class="tile"><b style="color:#2a78d6">{nd}</b><span>driver-like (not ruled out)</span></div>
 <div class="tile"><b style="color:#1baf7a">{nt}</b><span>thermometers (ruled out)</span></div></div>
