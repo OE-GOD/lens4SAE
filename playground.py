@@ -38,6 +38,32 @@ def analyze(text):
               "fires_on": KNOWN.get(int(f), {}).get("fires_on", "")} for f in top if acts[f] > 0]
     return {"readout": round(readout(text), 3), "features": feats}
 
+def screen_sentence(text):
+    """Auto-screen the top firing features: push each, rank by causal effect vs a noise floor."""
+    base = readout(text)
+    with torch.no_grad():
+        _, c = model.run_with_cache(model.to_tokens(text[:300]), names_filter=[HOOK])
+        acts = sae.encode(c[HOOK][0]).float().max(0).values.cpu().numpy()
+    top = [int(f) for f in np.argsort(-acts)[:8] if acts[f] > 0]
+    g = torch.Generator().manual_seed(0)
+    null_max = 0.0
+    for _ in range(4):                      # noise floor: random pushes at the hard dose
+        r = torch.randn(Wdec.shape[1], generator=g).to("mps")
+        null_max = max(null_max, abs(readout(text, (r / r.norm() * 30).to(model.cfg.dtype)) - base))
+    rows = []
+    for f in top:
+        d = Wdec[f]
+        d15 = readout(text, (d / d.norm() * 15).to(model.cfg.dtype)) - base
+        d30 = readout(text, (d / d.norm() * 30).to(model.cfg.dtype)) - base
+        grows = abs(d30) >= abs(d15) * 1.2 and (d15 * d30 > 0)
+        if abs(d30) > 2 * null_max and grows: tag = "DRIVES"
+        elif abs(d30) > null_max: tag = "WEAK"
+        else: tag = "INERT"
+        rows.append({"id": f, "act": round(float(acts[f]), 1), "d15": round(d15, 3),
+                     "d30": round(d30, 3), "tag": tag})
+    rows.sort(key=lambda r: -abs(r["d30"]))
+    return {"base": round(base, 3), "null_floor": round(null_max, 3), "rows": rows}
+
 def steer(text, feat, dose):
     d = Wdec[feat]; v = (d / d.norm() * dose).to(model.cfg.dtype)
     base = readout(text); pushed = readout(text, v)
@@ -55,6 +81,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         if self.path == "/analyze": self._send(json.dumps(analyze(req["text"])))
+        elif self.path == "/screen": self._send(json.dumps(screen_sentence(req["text"])))
         elif self.path == "/steer": self._send(json.dumps(steer(req["text"], int(req["feature"]), float(req["dose"]))))
 
 print("PLAYGROUND READY -> http://localhost:8765", flush=True)
