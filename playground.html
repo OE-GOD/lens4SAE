@@ -6,16 +6,19 @@ button{font:inherit;padding:8px 18px;border:0;border-radius:8px;background:#2a78
 button:disabled{background:#aaa}.gauge{height:26px;background:#f0f0ef;border-radius:13px;position:relative;margin:14px 0;overflow:hidden}
 .fill{position:absolute;top:0;bottom:0;transition:all .4s}.zero{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#999}
 .glabel{text-align:center;font-size:13px;color:#666}
-.chip{display:inline-block;margin:4px 6px 0 0;padding:5px 10px;border-radius:8px;border:2px solid transparent;cursor:pointer;font-size:13px;background:#f4f4f3}
-.chip.sel{border-color:#1a1a19}.chip b{margin-right:6px}
-.v-not_ruled_out{box-shadow:inset 4px 0 #2a78d6}.v-ruled_out{box-shadow:inset 4px 0 #1baf7a}
-.v-indeterminate{box-shadow:inset 4px 0 #eda100}.v-unscreened{box-shadow:inset 4px 0 #ccc}
+.chip{display:inline-block;margin:5px 8px 0 0;padding:7px 12px;border-radius:8px;border:2px solid transparent;cursor:pointer;font-size:14px;background:#f4f4f3;border-left-width:6px}
+.chip.sel{border-color:#1a1a19}.chip b{margin-right:6px;font-size:15px}
+.chip .tag{display:block;font-size:11px;font-weight:600;letter-spacing:.3px;margin-top:2px}
+.v-not_ruled_out{background:#e3edfa;border-left-color:#2a78d6}.v-not_ruled_out .tag{color:#1c5eb0}
+.v-ruled_out{background:#e2f5ed;border-left-color:#1baf7a}.v-ruled_out .tag{color:#0f7a54}
+.v-indeterminate{background:#fdf3dd;border-left-color:#eda100}.v-indeterminate .tag{color:#a06d00}
+.v-unscreened{background:#f4f4f3;border-left-color:#bbb}.v-unscreened .tag{color:#888}
 .panel{border:1px solid #e5e5e5;border-radius:10px;padding:14px 16px;margin:16px 0}
 .delta{font-size:22px;font-weight:600}.muted{color:#666;font-size:13px}input[type=range]{width:240px;vertical-align:middle}
 </style>
 <h1>🔬 Lens4SAE Playground</h1>
 <p class="muted">Type a sentence → see the model's mind. Click a feature → push it → see if behavior moves.
-<b style="color:#2a78d6">blue</b>=driver-like <b style="color:#1baf7a">green</b>=thermometer <b style="color:#eda100">yellow</b>=indeterminate gray=unscreened</p>
+<b style="color:#1c5eb0">DRIVER?</b> = moves behavior &middot; <b style="color:#0f7a54">GAUGE</b> = inert thermometer &middot; <b style="color:#a06d00">UNCLEAR</b> = saturates &middot; <b style="color:#888">NEW</b> = never screened</p>
 <textarea id="txt" rows="2">The movie was okay, I guess.</textarea>
 <p><button id="go">Read its mind</button></p>
 <div id="mind" style="display:none">
@@ -31,6 +34,7 @@ button:disabled{background:#aaa}.gauge{height:26px;background:#f0f0ef;border-rad
   </div>
 </div>
 <script>
+const TAG={not_ruled_out:"DRIVER?",ruled_out:"GAUGE",indeterminate:"UNCLEAR",unscreened:"NEW"};
 let sel=null;
 const $=id=>document.getElementById(id);
 function gauge(v){const pct=Math.max(-1,Math.min(1,v/4));const f=$("fill");
@@ -40,7 +44,7 @@ function gauge(v){const pct=Math.max(-1,Math.min(1,v/4));const f=$("fill");
 $("go").onclick=async()=>{$("go").disabled=true;$("go").textContent="reading...";
  const r=await(await fetch("/analyze",{method:"POST",body:JSON.stringify({text:$("txt").value})})).json();
  $("mind").style.display="block";gauge(r.readout);
- $("chips").innerHTML=r.features.map(f=>`<span class="chip v-${f.verdict}" onclick="pick(${f.id},'${f.verdict}',this)"><b>${f.id}</b>${f.act}</span>`).join("");
+ $("chips").innerHTML=r.features.map(f=>`<span class="chip v-${f.verdict}" onclick="pick(${f.id},'${f.verdict}',this)"><b>${f.id}</b>${f.act}<span class="tag">${TAG[f.verdict]}</span></span>`).join("");
  $("steerbox").style.display="none";$("go").disabled=false;$("go").textContent="Read its mind"};
 function pick(id,v,el){sel=id;document.querySelectorAll(".chip").forEach(c=>c.classList.remove("sel"));el.classList.add("sel");
  $("steerbox").style.display="block";$("steertitle").textContent="feature "+id+" ("+v.replace(/_/g," ")+") ";
