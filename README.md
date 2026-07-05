@@ -5,16 +5,16 @@
 *Status: research prototype (v0.12) — a mechanistic-interpretability research tool, not a production product. Validated on Gemma-2-2b + Gemma Scope L12 (sentiment, formality & toxicity); see Scope & limits.*
 
 When you use an interpretability feature as an RL reward or a monitor, only some features actually
-*work*. FeatureScope tells the two apart:
+*work*. Lens4SAE tells the two apart:
 
 - a **driver** is a feature the model *computes with* — steering it changes behaviour (read = write);
 - a **thermometer** is decodable/correlated but **causally inert** — steering it does nothing (read ≠ write).
 
 Reward a **driver** and you train the real behaviour. Reward a **thermometer** and the optimizer
-**games the gauge** (Goodhart). FeatureScope finds the thermometers so you can rule them out.
+**games the gauge** (Goodhart). Lens4SAE finds the thermometers so you can rule them out.
 
 > ## ⚠️ Scope & limits (read first)
-> FeatureScope is a **one-sided _negative_ screen.** It can confidently tell you a feature is a
+> Lens4SAE is a **one-sided _negative_ screen.** It can confidently tell you a feature is a
 > **thermometer (rule it out)**. It does **not** certify that a feature is *safe to optimize* —
 > there is deliberately **no `safe_to_optimize`** in the API. Driver-ness is **necessary, not
 > sufficient**: a feature that is a driver under gentle steering can still **decouple under hard
@@ -29,7 +29,7 @@ Reward a **driver** and you train the real behaviour. Reward a **thermometer** a
 
 ## Why trust the labels: it self-tests against ground truth
 
-Before it will report, FeatureScope runs a **self-test** with **synthetic anchors**: it manufactures a
+Before it will report, Lens4SAE runs a **self-test** with **synthetic anchors**: it manufactures a
 guaranteed driver (the concept's difference-of-means direction) and a guaranteed null (a random
 direction) and checks it can tell them apart. If it can't, it **refuses to label** (`report()`
 raises). A tool that validates itself before speaking — for *any* concept, with no pre-labeled features.
