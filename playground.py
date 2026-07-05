@@ -30,13 +30,16 @@ def readout(text, steer=None):
 
 def analyze(text):
     with torch.no_grad():
-        _, c = model.run_with_cache(model.to_tokens(text[:300]), names_filter=[HOOK])
-        acts = sae.encode(c[HOOK][0]).float().max(0).values.cpu().numpy()
+        toks = model.to_tokens(text[:300])
+        _, c = model.run_with_cache(toks, names_filter=[HOOK])
+        per_tok = sae.encode(c[HOOK][0]).float().cpu().numpy()   # [seq, d_sae]
+    acts = per_tok.max(0)
     top = np.argsort(-acts)[:12]
+    tok_strs = [model.to_string(t) for t in toks[0]]
     feats = [{"id": int(f), "act": round(float(acts[f]), 2),
               "verdict": KNOWN.get(int(f), {}).get("verdict", "unscreened"),
-              "fires_on": KNOWN.get(int(f), {}).get("fires_on", "")} for f in top if acts[f] > 0]
-    return {"readout": round(readout(text), 3), "features": feats}
+              "tok_acts": [round(float(x), 1) for x in per_tok[:, f]]} for f in top if acts[f] > 0]
+    return {"readout": round(readout(text), 3), "tokens": tok_strs, "features": feats}
 
 def screen_sentence(text):
     """Auto-screen the top firing features: push each, rank by causal effect vs a noise floor."""
@@ -51,16 +54,18 @@ def screen_sentence(text):
         r = torch.randn(Wdec.shape[1], generator=g).to("mps")
         null_max = max(null_max, abs(readout(text, (r / r.norm() * 30).to(model.cfg.dtype)) - base))
     rows = []
+    DOSES = (8, 15, 30, 60)
     for f in top:
-        d = Wdec[f]
-        d15 = readout(text, (d / d.norm() * 15).to(model.cfg.dtype)) - base
-        d30 = readout(text, (d / d.norm() * 30).to(model.cfg.dtype)) - base
+        d = Wdec[f]; u = d / d.norm()
+        curve = [round(readout(text, (u * k).to(model.cfg.dtype)) - base, 3) for k in DOSES]
+        d15, d30 = curve[1], curve[2]
         grows = abs(d30) >= abs(d15) * 1.2 and (d15 * d30 > 0)
         if abs(d30) > 2 * null_max and grows: tag = "DRIVES"
         elif abs(d30) > null_max: tag = "WEAK"
         else: tag = "INERT"
-        rows.append({"id": f, "act": round(float(acts[f]), 1), "d15": round(d15, 3),
-                     "d30": round(d30, 3), "tag": tag})
+        sat = abs(curve[3]) < abs(curve[2]) * 0.7
+        rows.append({"id": f, "act": round(float(acts[f]), 1), "curve": curve,
+                     "d30": d30, "tag": tag + (" (saturates!)" if sat and tag == "DRIVES" else "")})
     rows.sort(key=lambda r: -abs(r["d30"]))
     return {"base": round(base, 3), "null_floor": round(null_max, 3), "rows": rows}
 

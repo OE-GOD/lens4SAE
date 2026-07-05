@@ -26,7 +26,8 @@ button:disabled{background:#aaa}.gauge{height:26px;background:#f0f0ef;border-rad
   <div class="glabel">model's sentiment verdict (negative ← → positive)</div>
   <div class="gauge"><div class="zero"></div><div id="fill" class="fill"></div></div>
   <div class="glabel" id="score"></div>
-  <h3 style="font-size:15px">Features firing (its "thoughts")</h3><div id="chips"></div>
+  <div id="tokstrip" class="muted" style="margin:10px 0;line-height:2"></div>
+<h3 style="font-size:15px">Features firing (its "thoughts") — <span class="muted" style="font-weight:400">click one to see where it looks</span></h3><div id="chips"></div>
   <div class="panel" id="steerbox" style="display:none">
     <b id="steertitle"></b><span class="muted" id="fireson"></span><br>
     push strength <input type="range" id="dose" min="0" max="40" value="15">
@@ -36,7 +37,7 @@ button:disabled{background:#aaa}.gauge{height:26px;background:#f0f0ef;border-rad
 </div>
 <script>
 const TAG={not_ruled_out:"DRIVER?",ruled_out:"GAUGE",indeterminate:"UNCLEAR",unscreened:"NEW"};
-let sel=null;
+let sel=null, ANA=null;
 const $=id=>document.getElementById(id);
 function gauge(v){const pct=Math.max(-1,Math.min(1,v/4));const f=$("fill");
  if(pct>=0){f.style.left="50%";f.style.width=(pct*50)+"%";f.style.background="#2a78d6"}
@@ -44,15 +45,15 @@ function gauge(v){const pct=Math.max(-1,Math.min(1,v/4));const f=$("fill");
  $("score").textContent="score "+v.toFixed(2)}
 $("go").onclick=async()=>{$("go").disabled=true;$("go").textContent="reading...";
  const r=await(await fetch("/analyze",{method:"POST",body:JSON.stringify({text:$("txt").value})})).json();
- $("mind").style.display="block";gauge(r.readout);
- $("chips").innerHTML=r.features.map(f=>`<span class="chip v-${f.verdict}" onclick="pick(${f.id},'${f.verdict}',this)"><b>${f.id}</b>${f.act}<span class="tag">${TAG[f.verdict]}</span></span>`).join("");
+ $("mind").style.display="block";gauge(r.readout);ANA=r;$("tokstrip").innerHTML="";
+ $("chips").innerHTML=r.features.map((f,j)=>`<span class="chip v-${f.verdict}" onclick="pick(${j},'${f.verdict}',this)"><b>${f.id}</b>${f.act}<span class="tag">${TAG[f.verdict]}</span></span>`).join("");
  $("steerbox").style.display="none";$("go").disabled=false;$("go").textContent="Read its mind"};
 function pick(id,v,el){sel=id;document.querySelectorAll(".chip").forEach(c=>c.classList.remove("sel"));el.classList.add("sel");
- $("steerbox").style.display="block";$("steertitle").textContent="feature "+id+" ("+v.replace(/_/g," ")+") ";
+ $("steerbox").style.display="block";$("steertitle").textContent="feature "+ANA.features[j].id+" ("+v.replace(/_/g," ")+") ";showTokens(ANA.features[j]);
  $("fireson").textContent="";$("result").textContent=""}
 $("dose").oninput=()=>$("doseval").textContent=$("dose").value;
 $("push").onclick=async()=>{$("push").disabled=true;$("push").textContent="pushing...";
- const r=await(await fetch("/steer",{method:"POST",body:JSON.stringify({text:$("txt").value,feature:sel,dose:$("dose").value})})).json();
+ const r=await(await fetch("/steer",{method:"POST",body:JSON.stringify({text:$("txt").value,feature:ANA.features[sel].id,dose:$("dose").value})})).json();
  gauge(r.steered);
  $("result").innerHTML=`before <b>${r.base}</b> → after <b>${r.steered}</b> &nbsp; <span class="delta" style="color:${Math.abs(r.delta)>0.3?"#2a78d6":"#999"}">Δ ${r.delta>0?"+":""}${r.delta}</span> ${Math.abs(r.delta)>0.3?"— it moved! this thought DOES something":"— barely moved: gauge, not lever"}`;
  $("push").disabled=false;$("push").textContent="Push it"};
@@ -63,9 +64,11 @@ $("scr").onclick=async()=>{$("scr").disabled=true;$("scr").textContent="screenin
  $("screenout").style.display="block";
  $("screenout").innerHTML="<b>Who drives this sentence?</b> <span class='muted'>base "+r.base+", noise floor ±"+r.null_floor+"</span>"+
   r.rows.map(x=>{const w=Math.abs(x.d30)/mx*100, pos=x.d30>0;
+   const cmax=Math.max(...r.rows.flatMap(y=>y.curve.map(Math.abs)),0.01);
+   const spark=x.curve.map((v,i)=>`${18+i*24},${30-v/cmax*24}`).join(" ");
    return `<div style="margin:7px 0;font-size:13px"><b style="width:52px;display:inline-block">${x.id}</b>`+
-   `<span style="display:inline-block;width:220px;background:#f0f0ef;border-radius:4px;vertical-align:middle"><span style="display:block;width:${w}%;height:12px;border-radius:4px;background:${pos?"#2a78d6":"#e34948"}"></span></span>`+
-   ` Δ ${x.d30>0?"+":""}${x.d30} <b style="color:${x.tag==="DRIVES"?"#1c5eb0":x.tag==="WEAK"?"#a06d00":"#999"}">${x.tag}</b></div>`}).join("")+
-  "<div class='muted'>DRIVES = beats noise 2x and grows with push · WEAK = above noise · INERT = within noise. Blue = pushes positive, red = pushes negative. Quick screen — the formal tool adds doses, stats and controls.</div>";
+   `<svg width="100" height="60" style="vertical-align:middle"><line x1="10" y1="30" x2="96" y2="30" stroke="#ddd"/><polyline points="${spark}" fill="none" stroke="${pos?"#2a78d6":"#e34948"}" stroke-width="2"/>`+x.curve.map((v,i)=>`<circle cx="${18+i*24}" cy="${30-v/cmax*24}" r="2.5" fill="${pos?"#2a78d6":"#e34948"}"/>`).join("")+`</svg>`+
+   ` Δhard ${x.d30>0?"+":""}${x.d30} <b style="color:${x.tag.startsWith("DRIVES")?"#1c5eb0":x.tag==="WEAK"?"#a06d00":"#999"}">${x.tag}</b></div>`}).join("")+
+  "<div class='muted'>Each mini-curve = effect at gentle→hard pushes (8/15/30/60). Straight rising line = honest lever; hook shape = saturates off-manifold. DRIVES = beats noise 2x and grows · WEAK = above noise · INERT = within noise. Blue = pushes positive, red = pushes negative. Quick screen — the formal tool adds doses, stats and controls.</div>";
  $("scr").disabled=false;$("scr").textContent="🔍 Find the drivers"};
 </script>
